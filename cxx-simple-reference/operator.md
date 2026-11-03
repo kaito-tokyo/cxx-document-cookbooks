@@ -25,34 +25,33 @@
      package managers" checked (covers Hackage and npm), plus:
 
      ```
-     mirror.gcr.io
+     get-ghcup.haskell.org
+     downloads.haskell.org
+     raw.githubusercontent.com
      hackage.haskell.org
      en.cppreference.com
      upload.cppreference.com
      ```
 
-     `mirror.gcr.io` serves the pinned GHC image without Docker Hub's
-     anonymous rate limit. Change `htmlgen_builder` in `inputs.lock` if you
-     use another registry.
+     ghcup is installed from `get-ghcup.haskell.org`, reads its metadata
+     from `raw.githubusercontent.com`, and downloads GHC and cabal from
+     `downloads.haskell.org`. `build_draft.sh` installs the versions pinned
+     by `htmlgen_ghc` and `htmlgen_cabal` in `inputs.lock`.
    * Environment variables:
 
      ```
      BASH_DEFAULT_TIMEOUT_MS=600000
      BASH_MAX_TIMEOUT_MS=1800000
-     HTMLGEN_CA_BUNDLE=/root/.ccr/ca-bundle.crt
      ```
-
-     `HTMLGEN_CA_BUNDLE` lets the build container trust the session's egress
-     proxy. Leave it unset outside Claude Code cloud sessions.
    * Setup script (keep it under 5 minutes so the snapshot is cached; the
      htmlgen build itself happens in the session):
 
      ```bash
      apt-get install -y -q graphviz
      pip install --break-system-packages lxml
-     pgrep dockerd || (dockerd >/var/log/dockerd.log 2>&1 &)
-     until docker info >/dev/null 2>&1; do sleep 1; done
-     docker pull mirror.gcr.io/library/haskell:8.10
+     curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org |
+       BOOTSTRAP_HASKELL_NONINTERACTIVE=1 BOOTSTRAP_HASKELL_MINIMAL=1 sh
+     ln -sf /root/.ghcup/bin/ghcup /usr/local/bin/ghcup
      ```
 
 5. Start the session with: `Read SKILL.md and follow its procedure. Stop at the first STOP marker.`

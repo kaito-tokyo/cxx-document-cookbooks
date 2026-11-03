@@ -23,7 +23,7 @@ what the contract provides.
 
 ```
 SKILL.md             this file: layer rules and procedure for the agent
-inputs.lock          pinned inputs (draft, htmlgen, GHC image, Hackage snapshot, archive)
+inputs.lock          pinned inputs (draft, htmlgen, GHC/cabal versions, Hackage snapshot, archive)
 presentation.md      requirements of the presentation layer (natural language)
 operator.md          one-time setup for the human (repository, cloud environment)
 data/
@@ -31,7 +31,7 @@ data/
   Makefile           fetch / draft / tables / check / repro / cppref / bump / clean
   lockfile.py        inputs.lock reader/writer
   fetch_inputs.py    check out the pinned git sources (--bump repins to upstream heads)
-  build_draft.sh     compile cxxdraft-htmlgen in Docker, render the draft on the host
+  build_draft.sh     compile cxxdraft-htmlgen with ghcup's GHC, render the draft
   package.json       pinned Node dependencies of htmlgen's MathJax step
   package-lock.json
   extract_tables.py  draft-html/ -> data/*.json + db.sqlite
@@ -39,9 +39,10 @@ data/
   check_data.py      verify build/ against CONTRACT.md, print a summary
 ```
 
-Host requirements of the data layer: Python 3 with `lxml`, git, Docker,
-Node.js + npm, Graphviz (`dot`). Network: github.com, the GHC image registry
-and Hackage (htmlgen build), the npm registry, and cppreference.com (archive).
+Host requirements of the data layer: Python 3 with `lxml`, git, ghcup,
+Node.js + npm, Graphviz (`dot`). Network: github.com, downloads.haskell.org
+(GHC and cabal through ghcup) and Hackage (htmlgen build), the npm registry,
+and cppreference.com (archive).
 
 ## Rules for the agent
 

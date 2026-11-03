@@ -91,7 +91,8 @@ def main():
     # Inputs -------------------------------------------------------------
     c.check("inputs: lock pins present", [
         f"{k} empty" for k in ("draft_repo", "draft_commit", "htmlgen_repo", "htmlgen_commit",
-                               "htmlgen_builder", "htmlgen_index_state") if not lock.get(k)])
+                               "htmlgen_ghc", "htmlgen_cabal",
+                               "htmlgen_index_state") if not lock.get(k)])
     c.check("inputs: checkouts at pinned commits", [
         f"{d}: {git_head(build / d)} != {lock.get(k)}"
         for d, k in (("draft-src", "draft_commit"), ("htmlgen-src", "htmlgen_commit"))
