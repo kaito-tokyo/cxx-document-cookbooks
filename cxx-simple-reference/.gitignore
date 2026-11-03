@@ -2,3 +2,4 @@ build/
 site/
 docset/
 __pycache__/
+node_modules/
