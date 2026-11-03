@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""Download, verify, and unpack the pinned cppreference offline archive.
+"""Download and unpack a cppreference offline archive.
 
-usage: fetch_cppref.py LOCK BUILD_DIR             fetch per cppref_url / cppref_sha256
-       fetch_cppref.py LOCK BUILD_DIR --pin URL   download URL, write its hash to LOCK
+usage: fetch_cppref.py BUILD_DIR URL
 
 Output: BUILD_DIR/cppref/  (archive contents, unmodified)
         BUILD_DIR/cppref.stamp
@@ -10,7 +9,6 @@ The archive itself is kept at BUILD_DIR/downloads/<filename>.
 """
 
 import argparse
-import hashlib
 import shutil
 import sys
 import tarfile
@@ -18,17 +16,6 @@ import urllib.parse
 import urllib.request
 import zipfile
 from pathlib import Path, PurePosixPath
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import lockfile  # noqa: E402
-
-
-def sha256(path):
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(1 << 20), b""):
-            h.update(chunk)
-    return h.hexdigest()
 
 
 def download(url, dest):
@@ -69,36 +56,23 @@ def unpack(archive, dest):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("lock")
     ap.add_argument("build")
-    ap.add_argument("--pin", metavar="URL")
+    ap.add_argument("url")
     args = ap.parse_args()
     build = Path(args.build)
-
-    if args.pin:
-        name = PurePosixPath(urllib.parse.urlparse(args.pin).path).name
-        archive = build / "downloads" / name
-        download(args.pin, archive)
-        lockfile.update(args.lock, cppref_url=args.pin, cppref_sha256=sha256(archive))
-        print(f"pinned {args.pin}")
-
-    entries = lockfile.read(args.lock)
-    url, digest = lockfile.require(entries, "cppref_url", "cppref_sha256", path=args.lock)
+    url = args.url
     name = PurePosixPath(urllib.parse.urlparse(url).path).name
     archive = build / "downloads" / name
     stamp = build / "cppref.stamp"
     out = build / "cppref"
 
-    if out.is_dir() and stamp.is_file() and stamp.read_text().strip() == digest:
+    if out.is_dir() and stamp.is_file() and stamp.read_text().strip() == url:
         print("cppref: up to date")
         return
-    if not archive.is_file() or sha256(archive) != digest:
+    if not archive.is_file():
         download(url, archive)
-    actual = sha256(archive)
-    if actual != digest:
-        sys.exit(f"{name}: sha256 mismatch: lock has {digest}, downloaded {actual}")
     unpack(archive, out)
-    stamp.write_text(digest + "\n")
+    stamp.write_text(url + "\n")
     print(f"cppref: unpacked {name} to {out}")
 
 

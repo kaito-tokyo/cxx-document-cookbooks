@@ -1,72 +1,52 @@
 #!/usr/bin/env bash
-# Render the pinned draft to HTML with cxxdraft-htmlgen.
+# Render the checked-out draft to HTML with cxxdraft-htmlgen.
 #
-# usage: build_draft.sh LOCK BUILD_DIR
+# usage: build_draft.sh BUILD_DIR
 #
 # Inputs  BUILD_DIR/draft-src, BUILD_DIR/htmlgen-src   (from fetch_inputs.py)
 # Output  BUILD_DIR/draft-html/                       (one .html file per section)
-#         or $DRAFT_HTML_OUT when set (used by the reproducibility check)
 #
-# Stage 1 compiles htmlgen with the pinned GHC and cabal, installed through
-#         ghcup, unless HTMLGEN_BIN points at an existing binary.
-#         GHC / CABAL may name existing binaries instead of ghcup; their
-#         versions must still match the pins.
+# Stage 1 compiles htmlgen with the GHC and cabal on PATH (or $GHC / $CABAL),
+#         unless HTMLGEN_BIN points at an existing binary.
 # Stage 2 runs the binary on the host, which needs: git, node + npm, graphviz (dot).
 set -euo pipefail
 
-lock=$(realpath "$1")
-build=$(realpath "$2")
+build=$(realpath "$1")
 here=$(cd "$(dirname "$0")" && pwd)
 
-lockval() { sed -n "s/^$1[[:space:]]*=[[:space:]]*\([^#]*\).*/\1/p" "$lock" | sed 's/[[:space:]]*$//'; }
+# ghcup's bin directory, when present, is searched for ghc and cabal.
+[ -d "$HOME/.ghcup/bin" ] && export PATH="$HOME/.ghcup/bin:$PATH"
 need() { command -v "$1" >/dev/null || { echo "build_draft.sh: '$1' not found${2:+ ($2)}" >&2; exit 1; }; }
-
-htmlgen_commit=$(lockval htmlgen_commit)
-ghc_version=$(lockval htmlgen_ghc)
-cabal_version=$(lockval htmlgen_cabal)
-index_state=$(lockval htmlgen_index_state)
-draft_commit=$(lockval draft_commit)
-for v in htmlgen_commit ghc_version cabal_version index_state draft_commit; do
-  [ -n "${!v}" ] || { echo "build_draft.sh: $v is empty in $lock" >&2; exit 1; }
-done
 
 src="$build/htmlgen-src"
 draft="$build/draft-src"
-[ "$(git -C "$src" rev-parse HEAD)" = "$htmlgen_commit" ] || { echo "htmlgen-src is not at the pinned commit; run fetch_inputs.py" >&2; exit 1; }
-[ "$(git -C "$draft" rev-parse HEAD)" = "$draft_commit" ] || { echo "draft-src is not at the pinned commit; run fetch_inputs.py" >&2; exit 1; }
+htmlgen_commit=$(git -C "$src" rev-parse HEAD)
+draft_commit=$(git -C "$draft" rev-parse HEAD)
 
-out="${DRAFT_HTML_OUT:-$build/draft-html}"
-mkdir -p "$(dirname "$out")"
-out=$(realpath -m "$out")
+out="$build/draft-html"
 out_stamp="$out.stamp"
-want_out_stamp="$draft_commit $htmlgen_commit ghc-$ghc_version cabal-$cabal_version $index_state $(sha256sum < "$here/package-lock.json" | cut -c1-64)"
-if [ -d "$out" ] && [ "$(cat "$out_stamp" 2>/dev/null)" = "$want_out_stamp" ] && [ -z "${FORCE:-}" ]; then
-  echo "draft-html: up to date (FORCE=1 to rebuild)"
-  exit 0
-fi
 
 need git; need node "Node.js"; need npm; need dot "Graphviz"
 
 # --- Stage 1: htmlgen binary -------------------------------------------------
 bin="${HTMLGEN_BIN:-$build/bin/cxxdraft-htmlgen}"
 stamp="$build/bin/cxxdraft-htmlgen.stamp"
-want_stamp="$htmlgen_commit ghc-$ghc_version cabal-$cabal_version $index_state"
-if [ -z "${HTMLGEN_BIN:-}" ] && { [ ! -x "$bin" ] || [ "$(cat "$stamp" 2>/dev/null)" != "$want_stamp" ]; }; then
-  if [ -n "${GHC:-}" ] && [ -n "${CABAL:-}" ]; then
-    ghc=$(command -v "$GHC") || { echo "build_draft.sh: GHC=$GHC not found" >&2; exit 1; }
-    cabal=$(command -v "$CABAL") || { echo "build_draft.sh: CABAL=$CABAL not found" >&2; exit 1; }
-  else
-    need ghcup "https://www.haskell.org/ghcup/"
-    ghcup install ghc "$ghc_version"
-    ghcup install cabal "$cabal_version"
-    ghc=$(ghcup whereis ghc "$ghc_version")
-    cabal=$(ghcup whereis cabal "$cabal_version")
-  fi
-  [ "$("$ghc" --numeric-version)" = "$ghc_version" ] ||
-    { echo "build_draft.sh: $ghc is not GHC $ghc_version" >&2; exit 1; }
-  [ "$("$cabal" --numeric-version)" = "$cabal_version" ] ||
-    { echo "build_draft.sh: $cabal is not cabal $cabal_version" >&2; exit 1; }
+if [ -z "${HTMLGEN_BIN:-}" ]; then
+  ghc=$(command -v "${GHC:-ghc}") || { echo "build_draft.sh: GHC (${GHC:-ghc}) not found" >&2; exit 1; }
+  cabal=$(command -v "${CABAL:-cabal}") || { echo "build_draft.sh: cabal (${CABAL:-cabal}) not found" >&2; exit 1; }
+  ghc_version=$("$ghc" --numeric-version)
+  cabal_version=$("$cabal" --numeric-version)
+  want_stamp="$htmlgen_commit ghc-$ghc_version cabal-$cabal_version"
+else
+  want_stamp="external $HTMLGEN_BIN"
+fi
+want_out_stamp="$draft_commit $want_stamp $(sha256sum < "$here/package-lock.json" | cut -c1-64)"
+if [ -d "$out" ] && [ "$(cat "$out_stamp" 2>/dev/null)" = "$want_out_stamp" ] && [ -z "${FORCE:-}" ]; then
+  echo "draft-html: up to date (FORCE=1 to rebuild)"
+  exit 0
+fi
 
+if [ -z "${HTMLGEN_BIN:-}" ] && { [ ! -x "$bin" ] || [ "$(cat "$stamp" 2>/dev/null)" != "$want_stamp" ]; }; then
   # Keep cabal's package store and index under BUILD_DIR, away from ~/.cabal.
   export CABAL_DIR="$build/cabal-home"
   work="$build/htmlgen-build"
@@ -76,8 +56,8 @@ if [ -z "${HTMLGEN_BIN:-}" ] && { [ ! -x "$bin" ] || [ "$(cat "$stamp" 2>/dev/nu
   git -C "$src" archive HEAD | tar -x -C "$work"
   echo "== compiling cxxdraft-htmlgen with GHC $ghc_version, cabal $cabal_version"
   (cd "$work" &&
-    "$cabal" update --index-state="$index_state" >/dev/null &&
-    "$cabal" build -v1 -w "$ghc" --index-state="$index_state" exe:cxxdraft-htmlgen &&
+    "$cabal" update >/dev/null &&
+    "$cabal" build -v1 -w "$ghc" exe:cxxdraft-htmlgen &&
     install -m 755 "$("$cabal" list-bin -w "$ghc" exe:cxxdraft-htmlgen)" "$build/bin/cxxdraft-htmlgen")
   echo "$want_stamp" > "$stamp"
 fi
@@ -105,7 +85,7 @@ mv "$run/14882" "$out"
 rm -rf "$run"
 
 # Determinism: htmlgen stamps the build date into the table of contents.
-# Replace it with the committer date of the pinned draft commit.
+# Replace it with the committer date of the draft commit.
 draft_date=$(TZ=UTC git -C "$draft" log -1 --date=format-local:%F --format=%cd)
 grep -rlE --include='*.html' '\(Generated on [0-9]{4}-[0-9]{2}-[0-9]{2} ' "$out" | LC_ALL=C sort |
   xargs -r sed -i -E "s/\(Generated on [0-9]{4}-[0-9]{2}-[0-9]{2} /(Generated on $draft_date /"

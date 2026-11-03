@@ -9,8 +9,8 @@ presentation layer reads nothing else. `inputs.json` carries
 
 ```
 build/
-  draft-src/            pinned cplusplus/draft checkout          (internal)
-  htmlgen-src/          pinned cxxdraft-htmlgen checkout          (internal)
+  draft-src/            cplusplus/draft checkout                 (internal)
+  htmlgen-src/          cxxdraft-htmlgen checkout                 (internal)
   bin/, cabal-home/, node/                                        (internal)
   draft-html/           the rendered draft                        (public)
   draft-html.stamp                                                (internal)
@@ -25,11 +25,11 @@ without notice. The presentation layer uses only the public ones.
 
 ## `draft-html/`
 
-The output of cxxdraft-htmlgen in `WithExtension` mode for the pinned draft
-commit, with exactly one post-processing step: the build date in the
+The output of cxxdraft-htmlgen in `WithExtension` mode for the checked-out
+draft commit, with exactly one post-processing step: the build date in the
 "(Generated on YYYY-MM-DD …)" line of `index.html` and `fulltoc.html` is
 replaced by the UTC committer date of the draft commit. Nothing else is
-changed, so the files are byte-identical across builds.
+changed, so rendering the same commits again gives byte-identical files.
 
 Properties the presentation layer must take into account:
 
@@ -43,7 +43,7 @@ Properties the presentation layer must take into account:
 * Links between pages are relative (`basic.life.html#3`). Pages link back
   to the table of contents as `index.html#<stable_name>`.
 * Each paragraph carries a "source" link to `github.com/cplusplus/draft` at
-  the pinned commit.
+  the checked-out commit.
 * Content is UTF-8 and contains non-ASCII characters.
 * Some text is produced by htmlgen rather than the draft: the header of
   `index.html`/`fulltoc.html`, redirect pages (see `xrefs`), and labels such
@@ -78,7 +78,7 @@ Every clause, annex, subclause, and term definition, in document order.
 Guarantees: every `path` exists; every `parent` is a row; every numbered
 subclause's number extends its parent's number; numbers are unique; at
 least 2000 rows; `basic.life`, `container.reqmts`, `vector.modifiers` exist.
-Numbers are specific to the pinned draft; stable names are the durable key.
+Numbers are specific to the checked-out draft; stable names are the durable key.
 
 ### `index_entries`
 
@@ -197,13 +197,15 @@ page, ~50 MB), `list` (`footnotes.html`, `tab.html`, `fig.html`), `asset`
 
 ### `inputs`
 
-Key/value provenance: the pinned fields of `inputs.lock` (except
-cppreference fields), `draft_commit_date` (ISO 8601 committer date), and
-`contract_version`.
+Key/value provenance of the build: `draft_repo`, `draft_commit`,
+`htmlgen_repo`, `htmlgen_commit` (the checkouts), `htmlgen_ghc`,
+`htmlgen_cabal` (the toolchain htmlgen was compiled with; absent when
+`HTMLGEN_BIN` supplied the binary), `draft_commit_date` (ISO 8601 committer
+date), and `contract_version`.
 
 ## `cppref/` (optional)
 
-Present only after `make -C data cppref` with a pinned archive: the archive's
+Present only after `make -C data cppref CPPREF_URL=...`: the archive's
 contents, unpacked unmodified (expected to contain `reference/en/cpp/…`).
 Not yet part of this contract: a `joins` table mapping cppreference pages to
 draft sections and an `unjoined` table. They belong to the data layer and
@@ -213,5 +215,4 @@ blocked.
 ## Verification
 
 `make -C data check` verifies every guarantee above and that re-extracting
-the tables gives byte-identical files. `make -C data repro` additionally
-re-renders the draft and requires `draft-html/` to be byte-identical.
+the tables gives byte-identical files.

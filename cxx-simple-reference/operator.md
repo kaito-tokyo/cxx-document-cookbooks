@@ -1,9 +1,9 @@
 # Operator setup (human, once)
 
 1. Create a private GitHub repository (e.g. `cppref-local`) and copy the
-   contents of this directory to its root (`SKILL.md`, `inputs.lock`,
-   `presentation.md`, `.gitignore`, `data/`). Optionally run
-   `make -C data bump` first to pin the latest draft.
+   contents of this directory to its root (`SKILL.md`,
+   `presentation.md`, `.gitignore`, `data/`). The data layer always builds
+   the current upstream heads of the draft and htmlgen.
 2. Add `CLAUDE.md` at the repository root:
 
    ```
@@ -35,8 +35,8 @@
 
      ghcup is installed from `get-ghcup.haskell.org`, reads its metadata
      from `raw.githubusercontent.com`, and downloads GHC and cabal from
-     `downloads.haskell.org`. `build_draft.sh` installs the versions pinned
-     by `htmlgen_ghc` and `htmlgen_cabal` in `inputs.lock`.
+     `downloads.haskell.org`. `build_draft.sh` uses the `ghc` and `cabal`
+     that the setup script selects with `ghcup set`.
    * Environment variables:
 
      ```
@@ -47,13 +47,17 @@
      htmlgen build itself happens in the session):
 
      ```bash
+     set -e
+     apt-get update
      apt-get install -y -q graphviz
      pip install --break-system-packages lxml
      curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org |
        BOOTSTRAP_HASKELL_NONINTERACTIVE=1 BOOTSTRAP_HASKELL_MINIMAL=1 sh
      ln -sf /root/.ghcup/bin/ghcup /usr/local/bin/ghcup
-     ghcup install ghc 9.4.7          # = htmlgen_ghc in inputs.lock
-     ghcup install cabal 3.14.2.0     # = htmlgen_cabal in inputs.lock
+     ghcup install ghc 8.10.7
+     ghcup install cabal 3.14.2.0
+     ghcup set ghc 8.10.7
+     ghcup set cabal 3.14.2.0
      ```
 
 5. Start the session with: `Read SKILL.md and follow its procedure. Stop at the first STOP marker.`

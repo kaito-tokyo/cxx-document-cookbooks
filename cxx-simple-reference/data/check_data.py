@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 """Verify build/ against data/CONTRACT.md and print a summary.
 
-usage: check_data.py LOCK BUILD_DIR [--repro]
-
---repro also re-renders the draft and re-extracts the tables into
-BUILD_DIR/repro/ and requires byte-identical results.
+usage: check_data.py BUILD_DIR
 """
 
 import argparse
@@ -12,7 +9,6 @@ import collections
 import html
 import json
 import re
-import shutil
 import sqlite3
 import subprocess
 import sys
@@ -23,7 +19,6 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import extract_tables  # noqa: E402
-import lockfile  # noqa: E402
 
 REQUIRED_SECTIONS = ["basic.life", "container.reqmts", "vector.modifiers"]
 MIN_SECTIONS = 2000
@@ -78,28 +73,19 @@ def git_head(path):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("lock")
     ap.add_argument("build")
-    ap.add_argument("--repro", action="store_true")
     args = ap.parse_args()
     build = Path(args.build)
     data = build / "data"
     html_dir = build / "draft-html"
-    lock = lockfile.read(args.lock)
     c = Checks()
 
     # Inputs -------------------------------------------------------------
-    c.check("inputs: lock pins present", [
-        f"{k} empty" for k in ("draft_repo", "draft_commit", "htmlgen_repo", "htmlgen_commit",
-                               "htmlgen_ghc", "htmlgen_cabal",
-                               "htmlgen_index_state") if not lock.get(k)])
-    c.check("inputs: checkouts at pinned commits", [
-        f"{d}: {git_head(build / d)} != {lock.get(k)}"
-        for d, k in (("draft-src", "draft_commit"), ("htmlgen-src", "htmlgen_commit"))
-        if git_head(build / d) != lock.get(k)])
+    heads = {d: git_head(build / d) for d in ("draft-src", "htmlgen-src")}
+    c.check("inputs: checkouts present", [d for d, h in heads.items() if not h])
     stamp = (build / "draft-html.stamp")
-    c.check("inputs: draft-html rendered from the pinned commits", [] if stamp.is_file() and
-            stamp.read_text().split()[:2] == [lock.get("draft_commit"), lock.get("htmlgen_commit")]
+    c.check("inputs: draft-html rendered from the checkouts", [] if stamp.is_file() and
+            stamp.read_text().split()[:2] == [heads["draft-src"], heads["htmlgen-src"]]
             else ["draft-html.stamp missing or stale"])
 
     tables = {}
@@ -171,28 +157,18 @@ def main():
         if db.execute(f"SELECT count(*) FROM {n}").fetchone()[0] != len(rows)])
     db.close()
 
-    # Reproducibility -----------------------------------------------------
+    # Determinism ---------------------------------------------------------
     with tempfile.TemporaryDirectory(dir=build) as tmp:
-        extract_tables.extract(Path(args.lock), build, Path(tmp), Path(tmp) / "db.sqlite")
+        extract_tables.extract(build, Path(tmp), Path(tmp) / "db.sqlite")
         diffs = [n for n in sorted(p.name for p in data.iterdir())
                  if (data / n).read_bytes() != (Path(tmp) / n).read_bytes()]
         diffs += [] if (build / "db.sqlite").read_bytes() == (Path(tmp) / "db.sqlite").read_bytes() \
             else ["db.sqlite"]
-        c.check("repro: tables re-extract identically", diffs)
-    if args.repro:
-        repro = build / "repro" / "draft-html"
-        shutil.rmtree(repro, ignore_errors=True)
-        subprocess.run(["bash", str(HERE / "build_draft.sh"), args.lock, str(build)], check=True,
-                       env={**__import__("os").environ, "DRAFT_HTML_OUT": str(repro),
-                            "FORCE": "1"}, stdout=subprocess.DEVNULL)
-        r = subprocess.run(["diff", "-rq", str(html_dir), str(repro)], text=True,
-                           capture_output=True)
-        c.check("repro: draft re-renders identically", r.stdout.splitlines())
-        shutil.rmtree(build / "repro", ignore_errors=True)
+        c.check("tables: re-extract identically", diffs)
 
     # Summary ---------------------------------------------------------------
-    print(f"draft   {lock.get('draft_commit')}")
-    print(f"htmlgen {lock.get('htmlgen_commit')}")
+    print(f"draft   {heads['draft-src']}")
+    print(f"htmlgen {heads['htmlgen-src']}")
     kinds = collections.Counter(s["kind"] for s in sections.values())
     print(f"sections      {len(sections):6}  " + " ".join(f"{k}={v}" for k, v in sorted(kinds.items())))
     cats = collections.Counter(e["category"] for e in entries)

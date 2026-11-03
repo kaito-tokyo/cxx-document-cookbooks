@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Extract the data tables from the rendered draft (build/draft-html/).
 
-usage: extract_tables.py LOCK BUILD_DIR [--out DIR]
+usage: extract_tables.py BUILD_DIR [--out DIR]
 
 Writes DIR/*.json (default BUILD_DIR/data/) and BUILD_DIR/db.sqlite.
 The tables and their meaning are specified in data/CONTRACT.md.
@@ -18,9 +18,6 @@ import urllib.parse
 from pathlib import Path
 
 import lxml.html
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import lockfile  # noqa: E402
 
 CONTRACT_VERSION = 1
 
@@ -350,7 +347,29 @@ def write_sqlite(path, tables):
     tmp.replace(path)
 
 
-def extract(lock, build, out_dir, db_path):
+def git_out(path, *args):
+    return subprocess.run(["git", "-C", str(path), *args],
+                          check=True, text=True, capture_output=True).stdout.strip()
+
+
+def provenance(build):
+    """The commits and toolchain the rendered draft was built from."""
+    inputs = {}
+    for prefix, subdir in (("draft", "draft-src"), ("htmlgen", "htmlgen-src")):
+        inputs[f"{prefix}_repo"] = git_out(build / subdir, "remote", "get-url", "origin")
+        inputs[f"{prefix}_commit"] = git_out(build / subdir, "rev-parse", "HEAD")
+    stamp = build / "bin" / "cxxdraft-htmlgen.stamp"
+    fields = stamp.read_text().split() if stamp.is_file() else []
+    for f in fields:
+        for tool in ("ghc", "cabal"):
+            if f.startswith(tool + "-"):
+                inputs[f"htmlgen_{tool}"] = f[len(tool) + 1:]
+    inputs["draft_commit_date"] = git_out(build / "draft-src", "log", "-1", "--format=%cI")
+    inputs["contract_version"] = str(CONTRACT_VERSION)
+    return [{"key": k, "value": v} for k, v in sorted(inputs.items())]
+
+
+def extract(build, out_dir, db_path):
     html_dir = build / "draft-html"
     if not (html_dir / "fulltoc.html").is_file():
         sys.exit(f"{html_dir}: not rendered; run build_draft.sh first")
@@ -371,14 +390,7 @@ def extract(lock, build, out_dir, db_path):
             r["depth"] = by_name[r["parent"]]["depth"] + 1
         by_name[r["stable_name"]] = r
 
-    entries = lockfile.read(lock)
-    draft_src = build / "draft-src"
-    draft_date = subprocess.run(
-        ["git", "-C", str(draft_src), "log", "-1", "--format=%cI"],
-        check=True, text=True, capture_output=True).stdout.strip()
-    inputs = [{"key": k, "value": entries[k]} for k in sorted(entries) if not k.startswith("cppref")]
-    inputs += [{"key": "draft_commit_date", "value": draft_date},
-               {"key": "contract_version", "value": str(CONTRACT_VERSION)}]
+    inputs = provenance(build)
 
     tables = {
         "sections": sections,
@@ -402,13 +414,12 @@ def extract(lock, build, out_dir, db_path):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("lock")
     ap.add_argument("build")
     ap.add_argument("--out", help="JSON output directory (default BUILD/data); skips db.sqlite")
     args = ap.parse_args()
     build = Path(args.build)
     out = Path(args.out) if args.out else build / "data"
-    tables = extract(Path(args.lock), build, out, None if args.out else build / "db.sqlite")
+    tables = extract(build, out, None if args.out else build / "db.sqlite")
     for name, rows in tables.items():
         print(f"{name}: {len(rows)}")
 

@@ -1,44 +1,37 @@
-# Data layer. Everything here is deterministic given inputs.lock.
+# Data layer.
 #
-#   make -C data fetch    check out the pinned draft and htmlgen sources
+#   make -C data fetch    check out the upstream heads of the draft and htmlgen
 #   make -C data draft    render the draft to build/draft-html/
 #   make -C data tables   extract tables into build/db.sqlite and build/data/*.json
-#   make -C data cppref   download + unpack the pinned cppreference archive
+#   make -C data cppref   download + unpack the cppreference archive at CPPREF_URL
 #   make -C data check    verify build/ against CONTRACT.md
-#   make -C data repro    check + re-render the draft and require identical output
-#   make -C data all      fetch + draft + tables + check (+ cppref if pinned)
-#   make -C data bump     repin draft/htmlgen to upstream heads (edits inputs.lock)
+#   make -C data all      fetch + draft + tables + check (+ cppref if CPPREF_URL is set)
 
-LOCK  ?= ../inputs.lock
-BUILD ?= ../build
-PY    ?= python3
+BUILD      ?= ../build
+PY         ?= python3
+CPPREF_URL ?=
 
-.PHONY: all fetch bump draft tables cppref check repro clean
+.PHONY: all fetch draft tables cppref check clean
 
 all: tables
-	@if grep -Eq '^cppref_url[[:space:]]*=[[:space:]]*[^[:space:]#]' $(LOCK); then $(MAKE) cppref; fi
+	@if [ -n "$(CPPREF_URL)" ]; then $(MAKE) cppref; fi
 	$(MAKE) check
 
 fetch:
-	$(PY) fetch_inputs.py $(LOCK) $(BUILD)
-
-bump:
-	$(PY) fetch_inputs.py $(LOCK) $(BUILD) --bump
+	$(PY) fetch_inputs.py $(BUILD)
 
 draft: fetch
-	bash build_draft.sh $(LOCK) $(BUILD)
+	bash build_draft.sh $(BUILD)
 
 tables: draft
-	$(PY) extract_tables.py $(LOCK) $(BUILD)
+	$(PY) extract_tables.py $(BUILD)
 
 cppref:
-	$(PY) fetch_cppref.py $(LOCK) $(BUILD)
+	@[ -n "$(CPPREF_URL)" ] || { echo "cppref: set CPPREF_URL" >&2; exit 1; }
+	$(PY) fetch_cppref.py $(BUILD) "$(CPPREF_URL)"
 
 check:
-	$(PY) check_data.py $(LOCK) $(BUILD)
-
-repro:
-	$(PY) check_data.py $(LOCK) $(BUILD) --repro
+	$(PY) check_data.py $(BUILD)
 
 clean:
 	rm -rf $(BUILD)
