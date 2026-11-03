@@ -75,13 +75,10 @@ if [ -z "${HTMLGEN_BIN:-}" ] && { [ ! -x "$bin" ] || [ "$(cat "$stamp" 2>/dev/nu
   find "$work" -mindepth 1 -maxdepth 1 ! -name dist-newstyle -exec rm -rf {} +
   git -C "$src" archive HEAD | tar -x -C "$work"
   echo "== compiling cxxdraft-htmlgen with GHC $ghc_version, cabal $cabal_version"
-  # regex-compat-tdfa-0.95.1.4 (the only release) declares base<4.15, which
-  # excludes every GHC >= 9.0; it compiles unchanged against newer base.
-  cabal_flags=(-w "$ghc" --index-state="$index_state" --allow-newer=regex-compat-tdfa:base)
   (cd "$work" &&
     "$cabal" update --index-state="$index_state" >/dev/null &&
-    "$cabal" build -v1 "${cabal_flags[@]}" exe:cxxdraft-htmlgen &&
-    install -m 755 "$("$cabal" list-bin "${cabal_flags[@]}" exe:cxxdraft-htmlgen)" "$build/bin/cxxdraft-htmlgen")
+    "$cabal" build -v1 -w "$ghc" --index-state="$index_state" exe:cxxdraft-htmlgen &&
+    install -m 755 "$("$cabal" list-bin -w "$ghc" exe:cxxdraft-htmlgen)" "$build/bin/cxxdraft-htmlgen")
   echo "$want_stamp" > "$stamp"
 fi
 [ -x "$bin" ] || { echo "build_draft.sh: no htmlgen binary at $bin" >&2; exit 1; }
