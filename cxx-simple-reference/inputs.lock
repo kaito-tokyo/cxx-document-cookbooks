@@ -1,0 +1,19 @@
+# Pinned inputs of the data layer. One `key = value` per line; `#` starts a comment.
+# Update with `make -C data bump` (rewrites the draft/htmlgen pins to the
+# current upstream heads), then commit this file.
+
+draft_repo          = https://github.com/cplusplus/draft
+draft_commit        = d4d6f38143c1b495aa33b2e5de0e0ec2daa173ca
+
+htmlgen_repo        = https://github.com/Eelis/cxxdraft-htmlgen
+htmlgen_commit      = e91ccb5500bb427e4a19dfb42b2023c2b75783fe
+# Image used only to compile cxxdraft-htmlgen; the binary runs on the host.
+htmlgen_builder     = mirror.gcr.io/library/haskell:8.10
+# Hackage snapshot used for the Haskell build (cabal --index-state).
+htmlgen_index_state = 2026-11-01T00:00:00Z
+
+# Offline archive of cppreference.com (CC BY-SA 3.0 / GFDL).
+# Left empty until chosen; `make -C data cppref` refuses to run while empty.
+cppref_source       = https://en.cppreference.com/w/Cppreference:Archives
+cppref_url          =
+cppref_sha256       =
