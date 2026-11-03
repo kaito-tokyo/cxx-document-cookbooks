@@ -49,7 +49,7 @@
      ```bash
      set -e
      apt-get update
-     apt-get install -y -q graphviz
+     apt-get install -y -q graphviz libgmp-dev
      pip install --break-system-packages lxml
      curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org |
        BOOTSTRAP_HASKELL_NONINTERACTIVE=1 BOOTSTRAP_HASKELL_MINIMAL=1 sh
