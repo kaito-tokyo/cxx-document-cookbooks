@@ -52,6 +52,8 @@
      curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org |
        BOOTSTRAP_HASKELL_NONINTERACTIVE=1 BOOTSTRAP_HASKELL_MINIMAL=1 sh
      ln -sf /root/.ghcup/bin/ghcup /usr/local/bin/ghcup
+     ghcup install ghc 9.4.7          # = htmlgen_ghc in inputs.lock
+     ghcup install cabal 3.14.2.0     # = htmlgen_cabal in inputs.lock
      ```
 
 5. Start the session with: `Read SKILL.md and follow its procedure. Stop at the first STOP marker.`
