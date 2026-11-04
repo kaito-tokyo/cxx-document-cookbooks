@@ -20,15 +20,15 @@ apt-get install --no-install-recommends texlive-luatex texlive-latex-base \
 
 ## Usage
 
-The draft is the submodule `../.deps/draft` (github.com/cplusplus/draft),
+The draft is the submodule `../draft` (github.com/cplusplus/draft),
 pinned at tag `n4861`: N4861, the working draft published with the same
 content as the C++20 DIS. A recent draft (checked with `d4d6f381`, October
 2026) works too.
 
 ```
-git submodule update --init ../.deps/draft          # the draft, at N4861
-./run.sh ../.deps/draft/source out.jsonl           # whole draft
-./run.sh ../.deps/draft/source out.jsonl basic     # \includeonly{basic}
+git submodule update --init ../draft               # the draft, at N4861
+./run.sh ../draft/source out.jsonl                # whole draft
+./run.sh ../draft/source out.jsonl basic          # \includeonly{basic}
 ```
 
 `run.sh` typesets the draft twice, with `splitindex` and `makeindex` in
