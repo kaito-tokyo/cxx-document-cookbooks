@@ -21,11 +21,12 @@ apt-get install --no-install-recommends texlive-luatex texlive-latex-base \
 ## Usage
 
 The draft is the submodule `../.deps/draft` (github.com/cplusplus/draft),
-pinned at the commit this was checked against; any checkout of the draft
-works too.
+pinned at tag `n4861`: N4861, the working draft published with the same
+content as the C++20 DIS. A recent draft (checked with `d4d6f381`, October
+2026) works too.
 
 ```
-git submodule update --init ../.deps/draft          # the draft, at d4d6f381
+git submodule update --init ../.deps/draft          # the draft, at N4861
 ./run.sh ../.deps/draft/source out.jsonl           # whole draft
 ./run.sh ../.deps/draft/source out.jsonl basic     # \includeonly{basic}
 ```
@@ -34,8 +35,8 @@ git submodule update --init ../.deps/draft          # the draft, at d4d6f381
 between as the draft's `latexmkrc` does, so that references, the indexes,
 the cross-references from earlier standards and the grammar summary are
 complete. The token stream is written by the second run, and its log
-next to it (`out.jsonl.log`). For draft `d4d6f381` this takes about 5.5
-minutes and writes about 21 MB.
+next to it (`out.jsonl.log`). For N4861 this takes about 3.5 minutes and
+writes about 14 MB (`d4d6f381`: 5.5 minutes, 21 MB).
 
 ## Output
 
@@ -96,7 +97,8 @@ and reports the ones that fail (Ubuntu: `apt-get install node-mathjax-full`):
 node check-math.js out.jsonl
 ```
 
-For draft `d4d6f381`, all 1554 distinct formulas (9826 in all) convert.
+For N4861, all 1130 distinct formulas (4048 in all) convert (`d4d6f381`:
+1554, 9826 in all).
 
 ## How it works
 

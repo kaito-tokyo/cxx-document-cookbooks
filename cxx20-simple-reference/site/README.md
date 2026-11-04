@@ -44,8 +44,8 @@ pages need no script. (The browser build of MathJax in Ubuntu's
 `node-mathjax-full`, `es5/`, fails in the browser with "Class constructor
 cannot be invoked without 'new'".)
 
-For draft `d4d6f381` the build takes about 5 seconds and writes 42 pages,
-29 MB in all.
+For N4861 the build takes about 3 seconds and writes 39 pages, 17 MB in
+all (`d4d6f381`: 42 pages, 29 MB).
 
 ## Known gaps
 
