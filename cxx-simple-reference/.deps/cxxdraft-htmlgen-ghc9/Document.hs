@@ -4,7 +4,7 @@
 -- SPDX-License-Identifier: LicenseRef-cxxdraft-htmlgen-PublicDomain AND MIT
 
 {-# OPTIONS_GHC -fno-warn-tabs #-}
-{-# LANGUAGE OverloadedStrings, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, ViewPatterns, DeriveDataTypeable, StandaloneDeriving #-}
 
 module Document (
 	CellSpan(..), Cell(..), RowSepKind(..), Row(..), Element(..), Paragraph(..),
@@ -26,6 +26,7 @@ import Prelude hiding (take, (.), takeWhile, (++), lookup, readFile)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.String (IsString)
+import Data.Data (Data)
 import Util ((.), (++), greekAlphabet)
 
 -- Document structure:
@@ -405,3 +406,31 @@ sectionByAbbr :: Draft -> Abbreviation -> Maybe Section
 sectionByAbbr d a = case abbrMap d a of
 	Just (StablyNamedSection s) -> Just s
 	_ -> Nothing
+
+-- Data instances, used to write the document structure as XML.
+
+deriving instance Data CellSpan
+deriving instance Data a => Data (Cell a)
+deriving instance Data RowSepKind
+deriving instance Data a => Data (Row a)
+deriving instance Data TextAlignment
+deriving instance Data ColumnSpec
+deriving instance Data Table
+deriving instance Data Figure
+deriving instance Data Formula
+deriving instance Data Item
+deriving instance Data Footnote
+deriving instance Data Note
+deriving instance Data Example
+deriving instance Data Sentence
+deriving instance Data TeXPara
+deriving instance Data Element
+deriving instance Data SectionKind
+deriving instance Data Chapter
+deriving instance Data SourceLocation
+deriving instance Data Paragraph
+deriving instance Data Section
+deriving instance Data IndexComponent
+deriving instance Data IndexKind
+deriving instance Data IndexEntry
+deriving instance Data IndexNode

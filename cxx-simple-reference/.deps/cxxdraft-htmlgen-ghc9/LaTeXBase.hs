@@ -3,7 +3,7 @@
 --
 -- SPDX-License-Identifier: LicenseRef-cxxdraft-htmlgen-PublicDomain AND MIT
 
-{-# LANGUAGE ViewPatterns, OverloadedStrings #-}
+{-# LANGUAGE ViewPatterns, OverloadedStrings, DeriveDataTypeable, StandaloneDeriving #-}
 
 module LaTeXBase
  ( MathType(..), LaTeXUnit(..), LaTeX, TeXArg, ArgKind(..), concatRaws, hasCommand, isJustRaw
@@ -11,6 +11,7 @@ module LaTeXBase
  , trim, trimr, triml, texStripInfix, isCodeblock, isMath, texStripPrefix, texStripAnyPrefix, AllUnits(..) ) where
 
 import Data.String (fromString)
+import Data.Data (Data)
 import Prelude hiding ((.), (++), writeFile, dropWhile)
 import Data.Text (Text, pack)
 import qualified Data.Text as Text
@@ -212,3 +213,9 @@ isCodeblock _ = False
 isJustRaw :: LaTeX -> Maybe Text
 isJustRaw [TeXRaw x] = Just x
 isJustRaw _ = Nothing
+
+-- Data instances, used to write the document structure as XML.
+
+deriving instance Data MathType
+deriving instance Data ArgKind
+deriving instance Data LaTeXUnit
