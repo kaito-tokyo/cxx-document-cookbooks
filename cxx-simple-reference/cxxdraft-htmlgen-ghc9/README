@@ -1,0 +1,107 @@
+Introduction
+
+  cxxdraft-htmlgen parses the LaTeX sources of the draft,
+  and generates static HTML pages from them.
+
+Prerequisites
+
+  - Git
+  - The Haskell Platform (https://www.haskell.org/platform/)
+  - Graphviz
+  - Node.js
+  - The 'split' NPM package
+  - mathjax-node-cli (https://github.com/mathjax/mathjax-node-cli/)
+
+Usage
+
+  Do:
+    git clone https://github.com/Eelis/cxxdraft-htmlgen.git
+    cd cxxdraft-htmlgen
+    cabal build
+    dist/build/cxxdraft-htmlgen/cxxdraft-htmlgen path/to/draft [sectionfilestyle]
+
+  Or with stack:
+    stack build
+    stack exec cxxdraft-htmlgen path/to/draft [sectionfilestyle]
+
+  The sectionfilestyle parameter is one of:
+
+    Bare            (to generate e.g. intro.execution)
+    WithExtension   (to generate e.g. intro.execution.html)
+    InSubdir        (to generate e.g. intro.execution/index.html)
+
+  The default is WithExtension, since this is suitable
+  for direct browsing on a filesystem without a web server.
+
+  Bare may be used in conjunction with web server configuration
+  specifying a default text/html mime type for the directory
+  containing the section pages, to get URLs such as:
+
+    temp.res#temp.dep
+    temp.dep#3
+
+  InSubdir only requires defaulting to index.html, to give:
+
+    temp.res/#temp.dep
+    temp.dep/#3
+
+Custom draft branch
+
+  While cxxdraft-htmlgen works with the official draft sources as-is,
+  better results can be obtained by using the following branch:
+
+    https://github.com/Eelis/draft/tree/cxxdraft-htmlgen-fixes
+
+  This branch tracks the official draft sources, but makes some changes to:
+    - improve syntax highlighting
+    - clean up hyperlinks
+    - work around MathJax limitations
+    - work around cxxdraft-htmlgen limitations
+
+Output
+
+  The following will be created in ./14882/ :
+
+  - index.html    A table of contents with links to...
+
+  - ~2300 interlinked section pages
+
+    These are named after the section abbreviation, which for
+    the Bare section file style look like:
+
+      stmt.goto
+      class.member.lookup
+      cpp
+      iterator.requirements.general
+      locale.moneypunct.virtuals
+
+    Since sections nest, content is duplicated at every level.
+    This allows one to specify more or less context for a given
+    citation. For example, one can link to:
+
+      basic.scope.hiding   (section 6.4.10 "Name hiding" on
+                            a page of its own)
+
+      basic.scope#hiding   (the same section highlighted on
+                            the page for section 6.4 "Scope")
+
+      basic#scope.hiding   (the same section highlighted on
+                            the page for chapter 6 "Basics")
+
+  - full         The entire document (~24 mbyte, or ~2 mbyte compressed).
+
+  - 14882.css    Used by all of the above.
+
+Hidden links
+
+  On any page:
+
+  - defined terms/concepts/nonterminals are links that select themselves;
+
+  - a full stop at the end of a sentence is a link that selects the sentence;
+
+  - moving the mouse over the right margin of a numbered paragraph reveals a link
+    to the LaTeX source for that paragraph;
+
+  - moving the mouse over the left margin of an itemdecl or table row reveals a link
+    that selects it.

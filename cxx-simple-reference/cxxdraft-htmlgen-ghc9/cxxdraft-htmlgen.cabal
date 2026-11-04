@@ -1,0 +1,32 @@
+name:                cxxdraft-htmlgen
+version:             0
+synopsis:            Converts C++ Standard draft documents from their LaTeX sources to HTML
+license:             PublicDomain
+license-file:        LICENSE
+author:              Eelis
+maintainer:          eelis@eelis.net
+category:            Text
+build-type:          Simple
+extra-source-files:  README
+cabal-version:       >=1.10
+
+executable cxxdraft-htmlgen
+  main-is:             genhtml.hs
+  other-modules:       Load14882, Render, Util, SectionPages, Toc, Document, LaTeXBase, LaTeXParser, RawDocument, MathJax, Sentences, CxxParser, Pages
+  other-extensions:    OverloadedStrings, RecordWildCards, TupleSections, ViewPatterns
+  build-depends: base >=4.6
+               , text >=1.2
+               , process >=1.1
+               , directory >=1.2
+               , hashable >=1.2
+               , containers >=0.5
+               , mtl >=2.2
+               , time >=1.4
+               , regex-compat-tdfa
+               , temporary
+               , parallel
+               , tagsoup
+               , monad-parallel
+  hs-source-dirs:      .
+  default-language:    Haskell2010
+  ghc-options:         -Wall -fno-warn-tabs -threaded "-with-rtsopts=-N"
