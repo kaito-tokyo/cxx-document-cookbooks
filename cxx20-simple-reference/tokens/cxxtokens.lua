@@ -14,7 +14,8 @@
 -- other files are still written, and no glyph reaches the PDF.
 --
 -- The stream goes to the file named by the CXXTOKENS_OUT environment
--- variable; without it, nothing is written (for the first run of the draft).
+-- variable, a path relative to the working directory; without it, nothing
+-- is written (for the first run of the draft).
 
 cxx = cxx or {}
 
@@ -26,7 +27,10 @@ local GLYPH, GLUE, HLIST, VLIST, DISC, KERN =
   node.id("disc"), node.id("kern")
 
 local out_path = os.getenv("CXXTOKENS_OUT")
-local out = out_path and out_path ~= "" and assert(io.open(out_path, "w"))
+-- Recent LuaTeX applies openout_any to io.open too, so the path should be
+-- relative to the working directory (run.sh moves the file afterwards).
+local out = out_path and out_path ~= "" and assert(io.open(out_path, "w"),
+  "cxxtokens.lua: cannot write " .. tostring(out_path))
 local pending = {} -- text not yet written
 
 local function json_string(s)

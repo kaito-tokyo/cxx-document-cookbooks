@@ -53,6 +53,8 @@ for glo in *.glo; do
   makeindex -q -s basic.gst -o "${glo%.glo}.gls" "$glo"
 done
 
-# Second run, writing the token stream.
-CXXTOKENS_OUT="$out" typeset
+# Second run, writing the token stream (inside the working directory, as
+# recent LuaTeX applies openout_any to Lua's io.open).
+CXXTOKENS_OUT=std.tokens.jsonl typeset
+mv std.tokens.jsonl "$out"
 cp std.log "$out.log"

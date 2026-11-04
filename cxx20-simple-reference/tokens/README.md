@@ -11,12 +11,35 @@ typesets as a stream of tokens, with marks where the draft's macros were
 used, and hyperref's destinations and links. Nothing is rendered: fonts
 are dummies and the shipped-out pages are empty.
 
-## Requirements (Ubuntu 24.04)
+## Requirements
+
+Two TeX Live versions are supported and checked: Ubuntu 24.04's (TeX Live
+2023) and the current one (TeX Live 2026).
+
+Ubuntu 24.04:
 
 ```
 apt-get install --no-install-recommends texlive-luatex texlive-latex-base \
   texlive-latex-recommended texlive-latex-extra texlive-plain-generic lmodern
 ```
+
+The current TeX Live, minimal (scheme-basic and the packages the drafts
+load, about 170 MB, in a directory of its own):
+
+```
+./install-texlive.sh /opt/texlive-latest
+export PATH=/opt/texlive-latest/bin/x86_64-linux:$PATH
+```
+
+With another TeX Live (BasicTeX on macOS, for instance), install the
+packages listed in `install-texlive.sh` with `tlmgr`.
+
+The workarounds in `prelude.tex` are written to hold on both: they test
+what is defined rather than version numbers. Between the two, the streams
+of a draft differ in page numbers, a few anchor names (memoir names some
+unnumbered chapters `chapter*.N` instead of `section*.N`) and footnote
+marks, which recent LaTeX sets as text instead of formulas; references,
+marks and formulas check out on both.
 
 ## Usage
 
