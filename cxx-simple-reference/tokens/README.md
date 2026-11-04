@@ -68,11 +68,13 @@ cannot be decoded is written as `\x{FONT:SLOT}` (a few large math
 delimiters).
 
 Formulas are taken in `mlist_to_hlist`, after all macros are expanded,
-and written back as TeX that MathJax reads: characters in Unicode, `_{}`
-and `^{}`, `\frac`, `\genfrac`, `\sqrt`, accents, `\left` / `\right`,
-`\bigl` / `\bigr`, `\mathrm` / `\mathsf` / `\mathtt` / `\mathit` for text
-fonts, `\text{...}` / `\texttt{...}` for boxes, and `array` for alignments
-(`cases`, matrices). The formula itself is not typeset. A `tabular` is also
+and written back as TeX for MathJax 3 in its default configuration (the
+`base` and `ams` packages; not `textmacros`, which would read the contents
+of `\text` as TeX): characters in Unicode, `_{}` and `^{}`, `\frac`,
+`\genfrac`, `\sqrt`, accents, `\left` / `\right` and `\bigl` / `\bigr` with
+named delimiters, `\mathrm` / `\mathsf` / `\mathtt` / `\mathit` for text
+fonts, `\text{...}` / `\texttt{...}` for boxes (only `{`, `}` and `$`
+escaped), and `array` for alignments (`cases`, matrices). The formula itself is not typeset. A `tabular` is also
 a formula to TeX (an `\halign` in a `\vcenter` or `\vtop`); one whose cells
 hold text is recognised and typeset as usual.
 
@@ -80,6 +82,15 @@ Every reference hyperref makes (`\ref`, `\iref`, `\tref`, `\cite`, the
 table of contents, index page numbers, URLs) is a link, and every internal
 link target is an anchor in the stream. Page numbers come from the dummy
 fonts' layout and differ from the real draft.
+
+`check-math.js` converts every distinct formula of a stream with MathJax
+and reports the ones that fail (Ubuntu: `apt-get install node-mathjax-full`):
+
+```
+node check-math.js out.jsonl
+```
+
+For draft `d4d6f381`, all 1554 distinct formulas (9826 in all) convert.
 
 ## How it works
 

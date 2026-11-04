@@ -191,6 +191,8 @@ local function math_glyph(fontid, c)
   local enc = font_enc[(name:gsub("%s.*", ""))]
   local slots = enc and slots_of(enc)
   local g = slots and slots[c]
+  -- The bar of \mapsto (named mapsto in Latin Modern's encoding).
+  if g == "mapstochar" or g == "mapsto" then return "\\mapstochar " end
   if g then
     local base = g:gsub("%..*", ""):gsub("display$", ""):gsub("text$", "")
       :gsub("[Bb]ig+$", ""):gsub("ex$", ""):gsub("[tb][pt]$", ""):gsub("mid$", "")
@@ -221,15 +223,23 @@ local function math_char(n)
   return s
 end
 
+-- MathJax takes these delimiters by name only.
+local delim_name = { ["{"] = "\\{", ["}"] = "\\}", ["⌊"] = "\\lfloor", ["⌋"] = "\\rfloor",
+  ["⌈"] = "\\lceil", ["⌉"] = "\\rceil", ["〈"] = "\\langle", ["〉"] = "\\rangle",
+  ["⟨"] = "\\langle", ["⟩"] = "\\rangle", ["‖"] = "\\|", ["∥"] = "\\|",
+  ["↑"] = "\\uparrow", ["↓"] = "\\downarrow", ["↕"] = "\\updownarrow",
+  ["⇑"] = "\\Uparrow", ["⇓"] = "\\Downarrow", ["⇕"] = "\\Updownarrow",
+  ["\\backslash "] = "\\backslash" }
 local function delim(d)
   if not d then return "." end
+  local s
   if d.small_char == 0 and d.small_fam == 0 then
     if d.large_char == 0 and d.large_fam == 0 then return "." end
-    return math_glyph(node.family_font(d.large_fam), d.large_char)
+    s = math_glyph(node.family_font(d.large_fam), d.large_char)
+  else
+    s = math_glyph(node.family_font(d.small_fam), d.small_char)
   end
-  local s = math_glyph(node.family_font(d.small_fam), d.small_char)
-  if s == "{" then return "\\{" elseif s == "}" then return "\\}" end
-  return s
+  return delim_name[s] or s
 end
 
 local mlist_tex, box_text
@@ -280,7 +290,7 @@ function mlist_tex(head)
       local single = nucleus and (nucleus.id == MATH_CHAR or nucleus.id == MATH_TEXT_CHAR)
       if kind == "opdisplaylimits" or kind == "oplimits" or kind == "opnolimits" then
         s = (single and s or "\\mathop{" .. s .. "}") ..
-          (kind == "oplimits" and "\\limits" or kind == "opnolimits" and "\\nolimits" or "")
+          (kind == "oplimits" and "\\limits " or kind == "opnolimits" and "\\nolimits " or "")
       elseif kind == "under" then s = "\\underline{" .. s .. "}"
       elseif kind == "over" then s = "\\overline{" .. s .. "}"
       elseif not single and (kind == "bin" or kind == "rel" or kind == "open" or kind == "close"
@@ -366,9 +376,9 @@ function box_text(head)
     for n in node.traverse(h) do
       if n.id == GLYPH then
         if (dummy_font_names[n.font] or ""):match("lmtt") then tt = true end
-        run[#run + 1] = (glyph_text(n):gsub("[{}#%%&_$\\~^]", function(c)
-          return ({ ["\\"] = "\\textbackslash{}", ["~"] = "\\textasciitilde{}", ["^"] = "\\textasciicircum{}" })[c] or "\\" .. c
-        end))
+        -- MathJax (without the textmacros extension) shows \text contents as
+        -- they are, except \{, \} and $.
+        run[#run + 1] = (glyph_text(n):gsub("[{}$]", "\\%0"))
       elseif n.id == GLUE then
         if n.width > 0 then run[#run + 1] = " " end
       elseif n.id == VLIST then
@@ -452,6 +462,8 @@ local function tidy(s)
   end)
   s = s:gsub("{\\mathinner{\\left(.-) \\right%. }}", "\\big%1 ")
   s = s:gsub("\\mathopen{}", "")
+  -- The bar of \mapsto is a glyph of its own.
+  s = s:gsub("\\mapstochar%s*→", "\\mapsto ")
   -- A control word directly followed by a letter.
   s = s:gsub("(\\%a+)([\192-\255])", "%1 %2")
   return s
