@@ -21,6 +21,23 @@
 % memoir no longer defines; recent drafts \providecommand them first.
 \AddToHook{file/macros.tex/before}{\providecommand\tref{}\providecommand\fref{}}
 
+% Older drafts (N4861) extract the grammar with the extract package, which
+% replaces LaTeX's \begin and \end with copies of those of LaTeX 2019 to run
+% \AfterEndEnv hooks. That bypasses LaTeX's environment hooks (so no note,
+% example or codeblock marks), and with recent LaTeX it loops for ever. Keep
+% LaTeX's \begin and \end, and run \AfterEndEnv code through LaTeX's own
+% env/NAME/after hook instead.
+\makeatletter
+\AddToHook{package/extract/before}{%
+  \expandafter\let\csname cxx@begin\expandafter\endcsname\csname begin \endcsname
+  \expandafter\let\csname cxx@end\expandafter\endcsname\csname end \endcsname}
+\AddToHook{package/extract/after}{%
+  \expandafter\let\csname begin \expandafter\endcsname\csname cxx@begin\endcsname
+  \expandafter\let\csname end \expandafter\endcsname\csname cxx@end\endcsname
+  \def\AfterEndEnv#1{\edef\cxx@hook{env/\@currenvir/after}%
+    \expandafter\AddToHookNext\expandafter{\cxx@hook}{#1}}}
+\makeatother
+
 % Walk each page into the token stream, then empty it of all but its
 % \write nodes and destinations.
 \AddToHook{shipout/before}{\directlua{cxx.shipout(\number\ShipoutBox)}}
