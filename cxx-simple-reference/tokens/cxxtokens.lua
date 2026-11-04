@@ -7,8 +7,14 @@
 -- \cxxmark{...} puts a user_defined whatsit carrying a string where it is
 -- used. Each paragraph gets a "par" mark at its start. When a page is
 -- shipped out, its box is walked in order: glyphs become text, interword
--- glue becomes a space, the end of a line becomes a "nl" token, and marks
--- become "mark" tokens. The page itself is discarded by the caller.
+-- glue becomes a space, the end of a line becomes a "nl" token, marks become
+-- "mark" tokens, and hyperref's destinations and links become "anchor",
+-- "link" and "endlink" tokens. The page is then emptied of everything but
+-- its \write nodes (and destinations), so that .aux, .idx, .out and the
+-- other files are still written, and no glyph reaches the PDF.
+--
+-- The stream goes to the file named by the CXXTOKENS_OUT environment
+-- variable; without it, nothing is written (for the first run of the draft).
 
 cxx = cxx or {}
 
@@ -19,7 +25,8 @@ local GLYPH, GLUE, HLIST, VLIST, DISC, KERN =
   node.id("glyph"), node.id("glue"), node.id("hlist"), node.id("vlist"),
   node.id("disc"), node.id("kern")
 
-local out = assert(io.open(tex.jobname .. ".tokens.jsonl", "w"))
+local out_path = os.getenv("CXXTOKENS_OUT")
+local out = out_path and out_path ~= "" and assert(io.open(out_path, "w"))
 local pending = {} -- text not yet written
 
 local function json_string(s)
@@ -31,6 +38,7 @@ local function json_string(s)
 end
 
 local function flush_text()
+  if not out then pending = {} return end
   if #pending > 0 then
     out:write('{"text":', json_string(table.concat(pending)), '}\n')
     pending = {}
@@ -39,6 +47,7 @@ end
 
 local function emit(kind, value)
   flush_text()
+  if not out then return end
   if value then
     out:write('{"', kind, '":', json_string(value), '}\n')
   else
@@ -448,15 +457,63 @@ local function tidy(s)
   return s
 end
 
+-- Whatsits of a formula that must survive it: \write nodes (a \label in an
+-- equation), destinations, links, and "anchor" marks.
+local math_keep = {}
+for _, name in ipairs({ "open", "write", "close", "late_lua", "pdf_dest",
+    "pdf_start_link", "pdf_end_link" }) do
+  math_keep[node.subtype(name)] = true
+end
+local function math_whatsits(head, list)
+  for n in node.traverse(head) do
+    if n.id == WHATSIT and (math_keep[n.subtype] or (n.subtype == USER_DEFINED
+        and n.user_id == USER_ID and n.value:match("^anchor "))) then
+      list[#list + 1] = node.copy(n)
+    elseif n.id == HLIST or n.id == VLIST then
+      math_whatsits(n.head, list)
+    elseif n.id == NOAD or n.id == ACCENT or n.id == RADICAL or n.id == FRACTION then
+      local fields = n.id == FRACTION and { n.num, n.denom } or { n.nucleus, n.sub, n.sup }
+      for i = 1, #fields + 3 do
+        local f = fields[i]
+        if f and (f.id == SUB_MLIST or f.id == SUB_BOX) then math_whatsits(f.head, list) end
+      end
+    end
+  end
+  return list
+end
+
 luatexbase.add_to_callback("mlist_to_hlist", function(head, display_type, penalties)
   if is_tabular(head) then return node.mlist_to_hlist(head, display_type, penalties) end
   local n = node.new(WHATSIT, USER_DEFINED)
   n.user_id = display_type == "display" and MATH_DISPLAY or MATH_INLINE
   n.type = 115
   n.value = tidy(mlist_tex(head))
+  local tail = n
+  for _, w in ipairs(math_whatsits(head, {})) do n, tail = node.insert_after(n, tail, w) end
   node.flush_list(head)
   return n
 end, "cxx math as TeX")
+
+local link_target
+local PDF_DEST, PDF_START_LINK, PDF_END_LINK =
+  node.subtype("pdf_dest"), node.subtype("pdf_start_link"), node.subtype("pdf_end_link")
+
+-- The target of a link: a destination name in this document, or a URI.
+function link_target(n)
+  local a = n.action
+  if a then
+    if a.action_type == 1 then -- goto
+      local name = a.named_id == 1 and a.action_id or ("num:" .. tostring(a.action_id))
+      if a.file and a.file ~= "" then return a.file .. "#" .. name end
+      return name
+    elseif a.action_type == 3 and a.data then -- user
+      local uri = a.data:match("/URI%s*%((.-)%)")
+      if uri then return uri end
+      return a.data
+    end
+  end
+  return n.link_attr or ""
+end
 
 local walk
 function walk(head, in_vlist)
@@ -473,9 +530,17 @@ function walk(head, in_vlist)
       if in_vlist and n.subtype == 1 then emit("nl") end -- a line of a paragraph
     elseif id == VLIST then
       walk(n.head, true)
+    elseif id == WHATSIT and n.subtype == PDF_DEST then
+      emit("anchor", n.named_id == 1 and n.dest_id or ("num:" .. tostring(n.dest_id)))
+    elseif id == WHATSIT and n.subtype == PDF_START_LINK then
+      emit("link", link_target(n))
+    elseif id == WHATSIT and n.subtype == PDF_END_LINK then
+      emit("endlink")
     elseif id == WHATSIT and n.subtype == USER_DEFINED then
       if n.user_id == USER_ID then
-        if n.value == "par" then emit("par") else emit("mark", n.value) end
+        if n.value == "par" then emit("par")
+        elseif n.value:match("^anchor ") then emit("anchor", n.value:sub(8))
+        else emit("mark", n.value) end
       elseif n.user_id == MATH_INLINE then emit("math", n.value)
       elseif n.user_id == MATH_DISPLAY then emit("displaymath", n.value)
       end
@@ -483,10 +548,38 @@ function walk(head, in_vlist)
   end
 end
 
+-- Nodes kept on the shipped-out page.
+local keep = {}
+for _, name in ipairs({ "open", "write", "close", "late_lua", "pdf_dest" }) do
+  keep[node.subtype(name)] = true
+end
+
+local function kept_nodes(head, list)
+  for n in node.traverse(head) do
+    if n.id == WHATSIT and keep[n.subtype] then
+      list[#list + 1] = node.copy(n)
+    elseif n.id == HLIST or n.id == VLIST then
+      kept_nodes(n.head, list)
+    elseif n.id == DISC and n.replace then
+      kept_nodes(n.replace, list)
+    end
+  end
+  return list
+end
+
 function cxx.shipout(boxnumber)
   local box = tex.getbox(boxnumber)
-  if box then walk(box.head, box.id == VLIST) end
-  flush_text()
+  if not box then return end
+  if out then
+    walk(box.head, box.id == VLIST)
+    flush_text()
+  end
+  local list = kept_nodes(box.head, {})
+  local head
+  for i = #list, 1, -1 do list[i].next = head; head = list[i] end
+  local old = box.head
+  box.head = head
+  node.flush_list(old)
 end
 
 luatexbase.add_to_callback("pre_linebreak_filter", function(head)
@@ -499,4 +592,4 @@ luatexbase.add_to_callback("pre_linebreak_filter", function(head)
   return head
 end, "cxx paragraph marks")
 
-function cxx.finish() flush_text(); out:close() end
+function cxx.finish() flush_text(); if out then out:close() end end

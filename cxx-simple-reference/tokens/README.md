@@ -8,7 +8,8 @@ SPDX-License-Identifier: Apache-2.0
 
 Runs the C++ draft through LuaLaTeX, unchanged, and writes what it
 typesets as a stream of tokens, with marks where the draft's macros were
-used. Nothing is rendered: fonts are dummies and pages are discarded.
+used, and hyperref's destinations and links. Nothing is rendered: fonts
+are dummies and the shipped-out pages are empty.
 
 ## Requirements (Ubuntu 24.04)
 
@@ -24,8 +25,12 @@ apt-get install --no-install-recommends texlive-luatex texlive-latex-base \
 ./run.sh path/to/draft/source out.jsonl basic      # \includeonly{basic}
 ```
 
-For draft `d4d6f381` the whole run takes about 2.5 minutes and writes
-about 16 MB.
+`run.sh` typesets the draft twice, with `splitindex` and `makeindex` in
+between as the draft's `latexmkrc` does, so that references, the indexes,
+the cross-references from earlier standards and the grammar summary are
+complete. The token stream is written by the second run, and its log
+next to it (`out.jsonl.log`). For draft `d4d6f381` this takes about 5.5
+minutes and writes about 21 MB.
 
 ## Output
 
@@ -39,6 +44,8 @@ One JSON object per line, in typesetting order:
 | `{"mark": "..."}`    | a mark placed by a hook in `prelude.tex`              |
 | `{"math": "..."}`    | an inline formula, as TeX for MathJax                 |
 | `{"displaymath": "..."}` | a display formula, as TeX for MathJax             |
+| `{"anchor": "..."}`  | a hyperref destination (`section.6.1`, `page.33`, …) |
+| `{"link": "..."}` … `{"endlink": true}` | a link: a destination name or a URI |
 
 Marks:
 
@@ -69,8 +76,10 @@ fonts, `\text{...}` / `\texttt{...}` for boxes, and `array` for alignments
 a formula to TeX (an `\halign` in a `\vcenter` or `\vtop`); one whose cells
 hold text is recognised and typeset as usual.
 
-Since the run is single-pass, references print as `??`; marks such as
-`iref` carry the labels instead.
+Every reference hyperref makes (`\ref`, `\iref`, `\tref`, `\cite`, the
+table of contents, index page numbers, URLs) is a link, and every internal
+link target is an anchor in the stream. Page numbers come from the dummy
+fonts' layout and differ from the real draft.
 
 ## How it works
 
@@ -84,5 +93,13 @@ Since the run is single-pass, references print as `??`; marks such as
   `\iref`) put `\cxxmark{...}`, a user-defined whatsit node, where the
   draft's macros are used;
 * `cxxtokens.lua` marks the start of each paragraph and, at shipout, walks
-  the page into the token stream before the page is discarded.
-  Hyphenation and running heads are switched off.
+  the page into the token stream, then empties the page of everything but
+  its `\write` nodes and destinations: `\label`, `\index` and hyperref's
+  bookmarks write at shipout, so the page must still be shipped out.
+  Hyphenation and running heads are switched off, and marks are not made
+  while the table of contents is typeset;
+* the stream is written only when `CXXTOKENS_OUT` names a file (the second
+  run of `run.sh`);
+* amsmath typesets an equation number several times and keeps a copy
+  without hyperref's destination, so the end of each `equation` names it
+  again as an anchor.

@@ -10,13 +10,19 @@
 \directlua{dofile(cxxtokens_dir .. "/cxxtokens.lua")}
 \AddToHook{package/graphicx/after}{\RenewDocumentCommand\includegraphics{s O{} m}{[#3]}}
 
-% Walk each page into the token stream, then drop it.
-\AddToHook{shipout/before}{\directlua{cxx.shipout(\number\ShipoutBox)}\DiscardShipoutBox}
+% Walk each page into the token stream, then empty it of all but its
+% \write nodes and destinations.
+\AddToHook{shipout/before}{\directlua{cxx.shipout(\number\ShipoutBox)}}
 \AddToHook{enddocument/end}{\directlua{cxx.finish()}}
 
 % A mark in the token stream. Protected, so that it is written as is to
 % .aux/.toc instead of being executed there.
-\protected\def\cxxmark#1{\directlua{cxx.mark("\luaescapestring{#1}")}}
+\newif\ifcxxmarks \cxxmarkstrue
+\protected\def\cxxmark#1{\ifcxxmarks\directlua{cxx.mark("\luaescapestring{#1}")}\fi}
+
+% Titles carry marks into .toc; the table of contents is typeset without them.
+\AddToHook{cmd/tableofcontents/before}{\global\cxxmarksfalse}
+\AddToHook{cmd/tableofcontents/after}{\global\cxxmarkstrue}
 
 % No hyphenation, no running heads.
 \AtBeginDocument{\hyphenpenalty=10000 \exhyphenpenalty=10000 \pagestyle{empty}%
@@ -27,6 +33,10 @@
   \let\cxxorigrSec\rSec
   \def\rSec#1[#2]#3{\cxxmark{section #1 #2}\cxxorigrSec#1[#2]{\cxxmark{begin title}#3\cxxmark{end title}}}%
 }
+
+% amsmath typesets an equation number several times and keeps a copy
+% without hyperref's destination; name the destination once more.
+\AddToHook{env/equation/end}{\cxxmark{anchor \csname @currentHref\endcsname}}
 
 % Paragraph numbers.
 \AddToHook{cmd/pnum/before}{\cxxmark{pnum}}
