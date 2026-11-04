@@ -34,9 +34,12 @@ The XML follows the Haskell types one to one; `Document.hs` and
 | `Map`, `IntMap`                    | `<Map>` / `<IntMap>` holding a `<List>` of `<Tuple>`s |
 | `Maybe`, `Bool`                    | `<Nothing/>`, `<Just>…</Just>`, `<True/>`, `<False/>` |
 
-A character that XML 1.0 does not allow in text is written as
-`<Char code="N"/>` (N = code point) inside the `Text` or `String`
-element. The current draft has none.
+Text that contains `<`, `>` or `&` is written as CDATA, so text never
+holds character references; where the text contains `]]>`, it is split
+into two CDATA sections between `]]` and `>`. Parsed, CDATA and plain text
+are the same. A character that XML 1.0 does not allow in text (not even in
+CDATA) is written as `<Char code="N"/>` (N = code point) inside the
+`Text` or `String` element. The current draft has none.
 
 Example: `TeXComm "tcode" "" [(FixArg, [TeXRaw "x"])]` is
 
