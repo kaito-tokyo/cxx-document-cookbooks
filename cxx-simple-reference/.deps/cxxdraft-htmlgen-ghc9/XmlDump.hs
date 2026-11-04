@@ -12,10 +12,9 @@
 --   wraps each field in an element named after the field, other
 --   constructors list their arguments in order;
 -- * 'Text', 'String', 'Int' and 'Char' become a 'Text', 'String', 'Int' or
---   'Char' element holding the value as text; a character that XML 1.0
---   does not allow (such as the control characters htmlgen uses as markers
---   in index entries) is written as an empty 'Char' element whose 'code'
---   attribute is its code point;
+--   'Char' element holding the value as text; the markers htmlgen puts
+--   into index keys become elements ('markers'), and any other character
+--   that XML 1.0 does not allow is an error;
 -- * lists become a 'List' element, tuples a 'Tuple' element, 'Map' and
 --   'IntMap' a 'Map' or 'IntMap' element holding a 'List' of key/value
 --   'Tuple's.
@@ -31,6 +30,7 @@ module XmlDump (draftToXml) where
 
 import Data.Data
 import Data.Text (Text)
+import Numeric (showHex)
 import qualified Data.Map as Map
 import qualified Data.Text as Text
 import qualified Text.XML as X
@@ -97,10 +97,18 @@ content t = case Text.break (not . xmlChar) t of
     (a, rest) -> case Text.uncons rest of
         Nothing -> [X.NodeContent a | not (Text.null a)]
         Just (ch, more) ->
-            [X.NodeContent a | not (Text.null a)] ++ codePoint ch : content more
+            [X.NodeContent a | not (Text.null a)] ++ marker ch : content more
   where
-    codePoint ch = X.NodeElement (X.Element (X.Name "Char" Nothing Nothing)
-        (Map.singleton (X.Name "code" Nothing Nothing) (Text.pack (show (fromEnum ch)))) [])
+    marker ch = case lookup ch markers of
+        Just n -> element n []
+        Nothing -> error ("XmlDump: U+" ++ showHex (fromEnum ch) "" ++ " cannot be written as XML 1.0")
+
+-- | The control characters that htmlgen's index parsing ('unescapeIndexPath'
+-- in Load14882.hs) leaves in index keys: the makeindex level separator '!'
+-- and the separator '@' between sort key and shown key. (It also uses
+-- U+0002, U+0004 and U+0005, but turns them back into characters.)
+markers :: [(Char, Text)]
+markers = [('\1', "IndexLevelSeparator"), ('\3', "IndexSortKeySeparator")]
 
 -- | Whether XML 1.0 allows the character in text.
 xmlChar :: Char -> Bool

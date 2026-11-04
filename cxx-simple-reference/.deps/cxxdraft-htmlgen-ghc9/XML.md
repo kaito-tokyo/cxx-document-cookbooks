@@ -34,9 +34,14 @@ The XML follows the Haskell types one to one; `Document.hs` and
 | `Map`, `IntMap`                    | `<Map>` / `<IntMap>` holding a `<List>` of `<Tuple>`s |
 | `Maybe`, `Bool`                    | `<Nothing/>`, `<Just>…</Just>`, `<True/>`, `<False/>` |
 
-A character that XML 1.0 does not allow in text is written as
-`<Char code="N"/>` (N = code point) inside the `Text` or `String`
-element. The current draft has none.
+htmlgen's index parsing (`unescapeIndexPath` in `Load14882.hs`) replaces
+makeindex's `!` (level separator) and `@` (separator between sort key and
+shown key) with the control characters U+0001 and U+0003, which XML 1.0
+does not allow. Where they occur in a `Text`, they are written as
+`<IndexLevelSeparator/>` and `<IndexSortKeySeparator/>`. Any other
+character that XML 1.0 does not allow stops `cxxdraft-xml` with an error.
+The text of the current draft has none of them; they occur only in the
+derived index data, which is not written.
 
 Example: `TeXComm "tcode" "" [(FixArg, [TeXRaw "x"])]` is
 
