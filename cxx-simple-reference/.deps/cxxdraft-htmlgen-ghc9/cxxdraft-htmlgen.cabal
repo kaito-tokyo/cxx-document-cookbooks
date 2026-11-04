@@ -46,9 +46,6 @@ executable cxxdraft-xml
                , array
                , time >=1.4
                , xml-conduit >=1.9
-               , xml-types
-               , conduit
-               , data-default-class
   hs-source-dirs:      .
   default-language:    Haskell2010
   ghc-options:         -Wall -fno-warn-tabs -threaded "-with-rtsopts=-N"

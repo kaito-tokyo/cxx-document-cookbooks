@@ -15,9 +15,7 @@
 --   'Char' element holding the value as text; a character that XML 1.0
 --   does not allow (such as the control characters htmlgen uses as markers
 --   in index entries) is written as an empty 'Char' element whose 'code'
---   attribute is its code point; text that contains '<', '>' or '&' is
---   written as CDATA (split where it contains "]]>"), so text never holds
---   character references;
+--   attribute is its code point;
 -- * lists become a 'List' element, tuples a 'Tuple' element, 'Map' and
 --   'IntMap' a 'Map' or 'IntMap' element holding a 'List' of key/value
 --   'Tuple's.
@@ -29,13 +27,12 @@
 -- to derive it. Fields that point back to an enclosing section
 -- ('sectionRefFields') hold each 'Section' as a 'SectionRef' element with the
 -- section's abbreviation.
-module XmlDump (draftToEvents) where
+module XmlDump (draftToXml) where
 
 import Data.Data
 import Data.Text (Text)
 import qualified Data.Map as Map
 import qualified Data.Text as Text
-import qualified Data.XML.Types as E
 import qualified Text.XML as X
 import Document (Draft(..), Section(..))
 
@@ -47,30 +44,14 @@ sectionRefFields = ["parents", "paraSection", "tableSection", "figureSection", "
 derivedFields :: [String]
 derivedFields = ["allParaElems", "secIndexEntries", "secIndexEntriesByPath"]
 
--- | The XML document as a stream of events, for 'Text.XML.Stream.Render'.
-draftToEvents :: Draft -> [E.Event]
-draftToEvents Draft{..} = [E.EventBeginDocument] ++ events root ++ [E.EventEndDocument]
+draftToXml :: Draft -> X.Document
+draftToXml Draft{..} = X.Document (X.Prologue [] Nothing []) root []
   where
-    root = element "Draft"
+    root = X.Element (X.Name "Draft" Nothing Nothing) Map.empty
         [ field "commitUrl" (value Full commitUrl)
         , field "chapters" (value Full chapters)
         , field "xrefDelta" (value Full xrefDelta)
         ]
-
-events :: X.Node -> [E.Event]
-events (X.NodeElement (X.Element n attrs children)) =
-    E.EventBeginElement n [(k, [E.ContentText v]) | (k, v) <- Map.toList attrs]
-    : concatMap events children ++ [E.EventEndElement n]
-events (X.NodeContent t)
-    | Text.any (`elem` ("<>&" :: String)) t = map E.EventCDATA (cdataParts t)
-    | otherwise = [E.EventContent (E.ContentText t)]
-events _ = []
-
--- | Splits text so that no part contains "]]>", which would end CDATA.
-cdataParts :: Text -> [Text]
-cdataParts t = case Text.breakOn "]]>" t of
-    (a, rest) | Text.null rest -> [a]
-              | otherwise -> Text.append a "]]" : cdataParts (Text.drop 2 rest)
 
 value :: forall a. Data a => Mode -> a -> X.Node
 value mode x

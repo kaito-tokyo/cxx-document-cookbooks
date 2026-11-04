@@ -11,11 +11,9 @@ import Data.Text.IO (readFile)
 import Prelude hiding (readFile)
 import System.Directory (getCurrentDirectory, setCurrentDirectory)
 import System.Environment (getArgs)
-import Conduit (runConduitRes, yieldMany, sinkFile, (.|))
-import Data.Default.Class (def)
-import Text.XML.Stream.Render (renderBytes)
+import qualified Text.XML as X
 import Load14882 (load14882)
-import XmlDump (draftToEvents)
+import XmlDump (draftToXml)
 
 main :: IO ()
 main = do
@@ -28,4 +26,4 @@ main = do
     setCurrentDirectory (repo ++ "/source")
     draft <- load14882 extraMacros
     setCurrentDirectory cwd
-    runConduitRes $ yieldMany (draftToEvents draft) .| renderBytes def .| sinkFile out
+    X.writeFile X.def out (draftToXml draft)
