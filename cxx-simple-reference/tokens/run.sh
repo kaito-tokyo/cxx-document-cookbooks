@@ -13,7 +13,7 @@
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 src=$(cd "$1" && pwd)
-out=$(realpath -m "$2")
+out=$(cd "$(dirname "$2")" && pwd)/$(basename "$2")
 shift 2
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
