@@ -20,9 +20,14 @@ apt-get install --no-install-recommends texlive-luatex texlive-latex-base \
 
 ## Usage
 
+The draft is the submodule `../.deps/draft` (github.com/cplusplus/draft),
+pinned at the commit this was checked against; any checkout of the draft
+works too.
+
 ```
-./run.sh path/to/draft/source out.jsonl            # whole draft
-./run.sh path/to/draft/source out.jsonl basic      # \includeonly{basic}
+git submodule update --init ../.deps/draft          # the draft, at d4d6f381
+./run.sh ../.deps/draft/source out.jsonl           # whole draft
+./run.sh ../.deps/draft/source out.jsonl basic     # \includeonly{basic}
 ```
 
 `run.sh` typesets the draft twice, with `splitindex` and `makeindex` in

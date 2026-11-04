@@ -17,7 +17,8 @@ apt-get install --no-install-recommends python3 nodejs node-mathjax-full
 ## Usage
 
 ```
-../tokens/run.sh path/to/draft/source tokens.jsonl
+git submodule update --init ../.deps/draft
+../tokens/run.sh ../.deps/draft/source tokens.jsonl
 ./build_site.py tokens.jsonl out/
 python3 -m http.server -d out/
 ```
