@@ -5,4 +5,3 @@
 [submodule "cxx20-simple-reference/.deps/draft"]
 	path = cxx20-simple-reference/.deps/draft
 	url = https://github.com/cplusplus/draft.git
-	shallow = true
