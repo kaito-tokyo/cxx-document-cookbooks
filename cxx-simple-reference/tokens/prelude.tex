@@ -1,0 +1,53 @@
+% SPDX-FileCopyrightText: 2026 Kaito Udagawa <umireon@kaito.tokyo>
+%
+% SPDX-License-Identifier: Apache-2.0
+
+% Read before std.tex: run the draft with LuaLaTeX and write a token stream.
+\RequirePackage{luatex85}
+\chardef\pdfshellescape=0
+\directlua{cxxtokens_dir = status.filename:match("^(.*)/[^/]*$") or "."}
+\directlua{dofile(cxxtokens_dir .. "/dummy-fonts.lua")}
+\directlua{dofile(cxxtokens_dir .. "/cxxtokens.lua")}
+\AddToHook{package/graphicx/after}{\RenewDocumentCommand\includegraphics{s O{} m}{[#3]}}
+
+% Walk each page into the token stream, then drop it.
+\AddToHook{shipout/before}{\directlua{cxx.shipout(\number\ShipoutBox)}\DiscardShipoutBox}
+\AddToHook{enddocument/end}{\directlua{cxx.finish()}}
+
+% A mark in the token stream. Protected, so that it is written as is to
+% .aux/.toc instead of being executed there.
+\protected\def\cxxmark#1{\directlua{cxx.mark("\luaescapestring{#1}")}}
+
+% No hyphenation, no running heads.
+\AtBeginDocument{\hyphenpenalty=10000 \exhyphenpenalty=10000 \pagestyle{empty}%
+  \RenewDocumentCommand\pagestyle{m}{}\RenewDocumentCommand\thispagestyle{m}{}}
+
+% Sections: level, abbreviation, and the title between marks.
+\AtBeginDocument{%
+  \let\cxxorigrSec\rSec
+  \def\rSec#1[#2]#3{\cxxmark{section #1 #2}\cxxorigrSec#1[#2]{\cxxmark{begin title}#3\cxxmark{end title}}}%
+}
+
+% Paragraph numbers.
+\AddToHook{cmd/pnum/before}{\cxxmark{pnum}}
+
+% Notes, examples, code blocks.
+\AddToHook{env/note/begin}{\cxxmark{begin note}}
+\AddToHook{env/note/end}{\cxxmark{end note}}
+\AddToHook{env/example/begin}{\cxxmark{begin example}}
+\AddToHook{env/example/end}{\cxxmark{end example}}
+\AddToHook{env/codeblock/begin}{\cxxmark{begin codeblock}}
+\AddToHook{env/codeblock/end}{\cxxmark{end codeblock}}
+
+% Inline markup.
+\AddToHook{cmd/tcode/before}{\cxxmark{begin tcode}}
+\AddToHook{cmd/tcode/after}{\cxxmark{end tcode}}
+\AddToHook{cmd/grammarterm/before}{\cxxmark{begin grammarterm}}
+\AddToHook{cmd/grammarterm/after}{\cxxmark{end grammarterm}}
+\AddToHook{cmd/defnx/before}{\cxxmark{begin defn}}
+\AddToHook{cmd/defnx/after}{\cxxmark{end defn}}
+\AtBeginDocument{%
+  \NewCommandCopy\cxxorigiref\iref
+  \RenewDocumentCommand\iref{m}{\cxxmark{iref #1}\cxxorigiref{#1}}%
+}
+
