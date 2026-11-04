@@ -76,6 +76,18 @@
 \AddToHook{cmd/printglossary/before}{\cxxmark{part}}
 \AddToHook{cmd/printindex/before}{\cxxmark{part}}
 
+% Annexes of older drafts (N4861): \infannex{ABBR}{TITLE}, \normannex{ABBR}{TITLE}.
+\AtBeginDocument{%
+  \ifcsname infannex\endcsname
+    \NewCommandCopy\cxxoriginfannex\infannex
+    \RenewDocumentCommand\infannex{mm}{\cxxmark{section 0 #1}\cxxoriginfannex{#1}{\cxxmark{begin title}#2\cxxmark{end title}}}%
+  \fi
+  \ifcsname normannex\endcsname
+    \NewCommandCopy\cxxorignormannex\normannex
+    \RenewDocumentCommand\normannex{mm}{\cxxmark{section 0 #1}\cxxorignormannex{#1}{\cxxmark{begin title}#2\cxxmark{end title}}}%
+  \fi
+}
+
 % Paragraph numbers.
 \AddToHook{cmd/pnum/before}{\cxxmark{pnum}}
 
