@@ -9,7 +9,7 @@
 module Util (
 	mconcat, (.), (++), Text, replace, xml, spanTag, h, getDigit, startsWith, urlChars,
 	anchor, Anchor(..), writeFile, readFile, greekAlphabet, mapLast, mapHead, stripInfix, dropTrailingWs,
-	textStripInfix, textSubRegex, splitOn, intercalateBuilders, replaceXmlChars, stripAnyPrefix, trimString,
+	textStripInfix, Regex, mkRegex, subRegex, matchRegexAll, textSubRegex, splitOn, intercalateBuilders, replaceXmlChars, stripAnyPrefix, trimString,
 	spanJust, measure, partitionBy, toSuperScriptChar
 	) where
 
@@ -22,7 +22,8 @@ import Data.Text (Text, replace)
 import Data.Text.IO (writeFile)
 import Data.Time (getCurrentTime, diffUTCTime)
 import Control.Arrow (first)
-import Text.Regex (subRegex, Regex)
+import Data.Array ((!))
+import Text.Regex.TDFA (Regex, CompOption(..), makeRegexOpts, defaultCompOpt, defaultExecOpt, matchAllText, matchM)
 import qualified Data.Text.Lazy.Builder as TextBuilder
 
 (.) :: Functor f => (a -> b) -> (f a -> f b)
@@ -120,6 +121,33 @@ urlChars =
 	replace "^"  "%5e" .
 	replace " "  "%20" .
 	replace "%"  "%25"
+
+-- | Compiles an extended regular expression in which '^' and '$' match at
+-- line boundaries and '.' does not match a newline.
+mkRegex :: String -> Regex
+mkRegex = makeRegexOpts defaultCompOpt{newSyntax = True, multiline = True} defaultExecOpt
+
+-- | Replaces every match of the regular expression in the input. In the
+-- replacement, a backslash followed by digits stands for that capture group
+-- (0 for the whole match), and two backslashes for one backslash.
+subRegex :: Regex -> String -> String -> String
+subRegex re input repl = go 0 input (matchAllText re input)
+	where
+		go _ s [] = s
+		go i s (m : ms) =
+			let (_, (off, len)) = m ! 0
+			    (before, rest) = splitAt (off - i) s
+			in before ++ expand m repl ++ go (off + len) (drop len rest) ms
+		expand m ('\\' : '\\' : r) = '\\' : expand m r
+		expand m ('\\' : r@(d : _)) | isDigit d =
+			let (n, r') = span isDigit r in fst (m ! read n) ++ expand m r'
+		expand m (c : r) = c : expand m r
+		expand _ [] = []
+
+-- | Returns the text before the first match, the match, the text after it,
+-- and the capture groups.
+matchRegexAll :: Regex -> String -> Maybe (String, String, String, [String])
+matchRegexAll = matchM
 
 textSubRegex :: Regex -> String -> Text -> Text
 textSubRegex pat repl txt = Text.pack $ subRegex pat (Text.unpack txt) repl

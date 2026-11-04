@@ -31,7 +31,6 @@ import LaTeXBase
 	, mapTeX, mapTeXRaw, concatRaws, texStripInfix, allUnits)
 import Data.Text (Text, replace, isPrefixOf)
 import Data.Text.IO (readFile)
-import Text.Regex (mkRegex, matchRegexAll)
 import qualified Data.Text as Text
 import Control.Monad (forM, when)
 import Prelude hiding (take, (.), takeWhile, (++), lookup, readFile)
@@ -45,7 +44,7 @@ import System.Process (readProcess)
 import System.IO.Unsafe (unsafePerformIO)
 import Control.Monad.Fix (MonadFix)
 import Control.Monad.State (MonadState, evalState, get, put, liftM2, modify)
-import Util ((.), (++), mapLast, stripInfix, measure, textStripInfix)
+import Util ((.), (++), mapLast, stripInfix, measure, textStripInfix, mkRegex, matchRegexAll)
 import RawDocument
 import Sentences (splitIntoSentences, isActualSentence, breakSentence)
 import Document
