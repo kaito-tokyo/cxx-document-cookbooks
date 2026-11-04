@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-[submodule "cxx-simple-reference/.deps/draft"]
-	path = cxx-simple-reference/.deps/draft
+[submodule "cxx20-simple-reference/.deps/draft"]
+	path = cxx20-simple-reference/.deps/draft
 	url = https://github.com/cplusplus/draft.git
 	shallow = true
