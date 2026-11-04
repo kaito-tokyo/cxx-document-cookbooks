@@ -38,6 +38,16 @@
 % without hyperref's destination; name the destination once more.
 \AddToHook{env/equation/end}{\cxxmark{anchor \csname @currentHref\endcsname}}
 
+% The \glossary entries of xrefdelta.tex are \write nodes alone on a page
+% that is otherwise empty until the glossary exists, so the page is never
+% shipped out and the entries are lost. An empty box gives the page content.
+\AddToHook{file/xrefdelta.tex/after}{\par\null\par}
+
+% Parts of the back matter: bibliography, cross-references, indexes.
+\AddToHook{env/thebibliography/begin}{\cxxmark{part}}
+\AddToHook{cmd/printglossary/before}{\cxxmark{part}}
+\AddToHook{cmd/printindex/before}{\cxxmark{part}}
+
 % Paragraph numbers.
 \AddToHook{cmd/pnum/before}{\cxxmark{pnum}}
 

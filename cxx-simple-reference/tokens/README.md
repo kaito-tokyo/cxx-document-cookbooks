@@ -53,6 +53,7 @@ Marks:
 |----------------------------------------|--------------------------------------------|
 | `section LEVEL ABBR`                   | `\rSec`, followed by `begin title` … `end title` |
 | `pnum`                                 | `\pnum`                                     |
+| `part`                                 | `thebibliography`, `\printglossary`, `\printindex` |
 | `begin note` / `end note`              | `note` environment                          |
 | `begin example` / `end example`        | `example` environment                       |
 | `begin codeblock` / `end codeblock`    | `codeblock` environment                     |
