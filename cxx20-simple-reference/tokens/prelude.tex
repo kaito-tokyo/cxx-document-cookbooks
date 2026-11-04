@@ -17,6 +17,10 @@
 \AddToHook{file/styles.tex/after}{\expandafter\let\csname lst@version\expandafter\endcsname
   \csname cxxlstversion\endcsname}
 
+% Older drafts (N4861) \renewcommand memoir's \tref and \fref, which recent
+% memoir no longer defines; recent drafts \providecommand them first.
+\AddToHook{file/macros.tex/before}{\providecommand\tref{}\providecommand\fref{}}
+
 % Walk each page into the token stream, then empty it of all but its
 % \write nodes and destinations.
 \AddToHook{shipout/before}{\directlua{cxx.shipout(\number\ShipoutBox)}}
