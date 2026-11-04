@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: 2026 Kaito Udagawa <umireon@kaito.tokyo>
+#
+# SPDX-License-Identifier: Apache-2.0
+
+[submodule "cxx-simple-reference/.deps/draft"]
+	path = cxx-simple-reference/.deps/draft
+	url = https://github.com/cplusplus/draft.git
+	shallow = true
