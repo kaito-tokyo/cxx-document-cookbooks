@@ -1,3 +1,8 @@
+-- SPDX-FileCopyrightText: Eelis <eelis@eelis.net> and the cxxdraft-htmlgen contributors
+-- SPDX-FileCopyrightText: 2026 Kaito Udagawa <umireon@kaito.tokyo>
+--
+-- SPDX-License-Identifier: LicenseRef-cxxdraft-htmlgen-PublicDomain AND MIT
+
 name:                cxxdraft-htmlgen
 version:             0
 synopsis:            Converts C++ Standard draft documents from their LaTeX sources to HTML

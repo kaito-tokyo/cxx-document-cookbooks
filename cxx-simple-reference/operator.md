@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Kaito Udagawa <umireon@kaito.tokyo>
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Operator setup (human, once)
 
 1. Create a private GitHub repository (e.g. `cppref-local`) and copy the

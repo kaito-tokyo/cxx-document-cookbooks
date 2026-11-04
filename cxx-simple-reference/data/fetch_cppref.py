@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+
+# SPDX-FileCopyrightText: 2026 Kaito Udagawa <umireon@kaito.tokyo>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """Download and unpack a cppreference offline archive.
 
 usage: fetch_cppref.py BUILD_DIR URL

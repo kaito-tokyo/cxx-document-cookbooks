@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+
+# SPDX-FileCopyrightText: 2026 Kaito Udagawa <umireon@kaito.tokyo>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """Verify build/ against data/CONTRACT.md and print a summary.
 
 usage: check_data.py BUILD_DIR

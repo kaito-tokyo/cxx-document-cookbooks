@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Kaito Udagawa <umireon@kaito.tokyo>
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Presentation layer — specification
 
 The presentation layer turns the data layer's output (`build/`, described in

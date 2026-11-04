@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+
+# SPDX-FileCopyrightText: 2026 Kaito Udagawa <umireon@kaito.tokyo>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # Render the checked-out draft to HTML with cxxdraft-htmlgen.
 #
 # usage: build_draft.sh BUILD_DIR

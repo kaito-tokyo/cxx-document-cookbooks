@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Kaito Udagawa <umireon@kaito.tokyo>
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Data contract (version 1)
 
 This file is normative. It describes everything the data layer puts in

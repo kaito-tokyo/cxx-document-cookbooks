@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Kaito Udagawa <umireon@kaito.tokyo>
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # cxx-simple-reference
 
 A cookbook for building a personal, offline C++ reference whose source of

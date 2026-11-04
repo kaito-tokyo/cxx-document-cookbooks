@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+
+# SPDX-FileCopyrightText: 2026 Kaito Udagawa <umireon@kaito.tokyo>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """Extract the data tables from the rendered draft (build/draft-html/).
 
 usage: extract_tables.py BUILD_DIR [--out DIR]

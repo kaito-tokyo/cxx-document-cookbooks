@@ -1,3 +1,10 @@
+/*
+ * SPDX-FileCopyrightText: Eelis <eelis@eelis.net> and the cxxdraft-htmlgen contributors
+ * SPDX-FileCopyrightText: 2026 Kaito Udagawa <umireon@kaito.tokyo>
+ *
+ * SPDX-License-Identifier: LicenseRef-cxxdraft-htmlgen-PublicDomain AND MIT
+ */
+
 h1 { margin: 0.2em 5pt 0.2em 5pt; line-height: 1.5; }
 h2 { margin: 0.2em 5pt 0.2em 5pt; border-bottom: 1px dashed rgba(0, 0, 0, 0.2); line-height: 1.5; }
 h3 { margin: 0.2em 5pt 0.2em 5pt; border-bottom: 1px dashed rgba(0, 0, 0, 0.2); line-height: 1.5; }

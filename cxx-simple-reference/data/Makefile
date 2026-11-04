@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Kaito Udagawa <umireon@kaito.tokyo>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # Data layer.
 #
 #   make -C data fetch    check out the upstream heads of the draft and htmlgen

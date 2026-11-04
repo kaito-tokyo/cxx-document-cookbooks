@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+
+# SPDX-FileCopyrightText: 2026 Kaito Udagawa <umireon@kaito.tokyo>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """Check out the upstream heads of the git inputs (draft, htmlgen) into the build directory.
 
 usage: fetch_inputs.py BUILD_DIR
