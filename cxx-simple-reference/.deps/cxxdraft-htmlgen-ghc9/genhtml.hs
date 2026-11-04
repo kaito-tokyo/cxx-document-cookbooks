@@ -11,9 +11,11 @@ import Load14882 (load14882)
 import Prelude hiding ((++), (.), writeFile, readFile)
 import System.Directory (createDirectoryIfMissing, setCurrentDirectory, getCurrentDirectory, copyFile)
 import System.Environment (getArgs)
-import Control.Monad (forM_)
+import Control.Monad (forM, forM_)
+import Control.Concurrent (forkIO)
+import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
+import Control.Exception (SomeException, try, throwIO)
 import Data.Text.IO (readFile)
-import qualified Control.Monad.Parallel as ParallelMonad
 import Util hiding (readFile)
 import Toc (writeTocFiles)
 import Pages (outputDir, PageStyle(..))
@@ -41,6 +43,17 @@ simpleFilesToCopy = [
     "normative-only.css",
     "icon-light.png",
     "icon-dark.png"]
+
+-- | Runs the actions concurrently and waits for all of them. Rethrows the
+-- exception of the first failed action in list order, if any.
+concurrently_ :: [IO ()] -> IO ()
+concurrently_ acts = do
+	vars <- forM acts $ \act -> do
+		v <- newEmptyMVar
+		_ <- forkIO (try act >>= putMVar v)
+		return v
+	results <- mapM takeMVar vars
+	mapM_ (either (throwIO :: SomeException -> IO ()) return) results
 
 main :: IO ()
 main = do
@@ -71,5 +84,5 @@ main = do
 				writeIndexFiles sectionFileStyle draft index ++
 				writeSectionFiles sectionFileStyle draft
 
-			((), took) <- measure $ ParallelMonad.sequence_ acts
+			((), took) <- measure $ concurrently_ acts
 			putStrLn $ "Wrote files to " ++ outputDir ++ " in " ++ show (took * 1000) ++ "ms."
