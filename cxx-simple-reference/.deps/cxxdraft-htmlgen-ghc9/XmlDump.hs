@@ -20,10 +20,13 @@
 --   'IntMap' a 'Map' or 'IntMap' element holding a 'List' of key/value
 --   'Tuple's.
 --
--- Fields that point back to an enclosing section ('sectionRefFields'), and
--- 'labels' of the draft, hold each 'Section' as a 'SectionRef' element with
--- the section's abbreviation, because writing them in full would never end.
--- 'abbrMap' is a function and is not written.
+-- Only the text of the draft is written: 'commitUrl', 'chapters' and
+-- 'xrefDelta' of the 'Draft'. Data that htmlgen derives from the text
+-- ('derivedFields', and the draft's 'index', 'indexEntryMap',
+-- 'indexEntriesByPath', 'labels' and 'abbrMap') is left out; XML.md says how
+-- to derive it. Fields that point back to an enclosing section
+-- ('sectionRefFields') hold each 'Section' as a 'SectionRef' element with the
+-- section's abbreviation.
 module XmlDump (draftToXml) where
 
 import Data.Data
@@ -38,17 +41,16 @@ data Mode = Full | SectionRef
 sectionRefFields :: [String]
 sectionRefFields = ["parents", "paraSection", "tableSection", "figureSection", "formulaSection"]
 
+derivedFields :: [String]
+derivedFields = ["allParaElems", "secIndexEntries", "secIndexEntriesByPath"]
+
 draftToXml :: Draft -> X.Document
 draftToXml Draft{..} = X.Document (X.Prologue [] Nothing []) root []
   where
     root = X.Element (X.Name "Draft" Nothing Nothing) Map.empty
         [ field "commitUrl" (value Full commitUrl)
         , field "chapters" (value Full chapters)
-        , field "index" (value Full index)
-        , field "indexEntryMap" (value Full indexEntryMap)
-        , field "indexEntriesByPath" (value Full indexEntriesByPath)
         , field "xrefDelta" (value Full xrefDelta)
-        , field "labels" (value SectionRef labels)
         ]
 
 value :: forall a. Data a => Mode -> a -> X.Node
@@ -65,7 +67,9 @@ value mode x
             | isTuple name -> element "Tuple" (gmapQ (value mode) x)
             | name == "fromList" -> element typeName (gmapQ (value mode) x)
             | null fields -> element name (gmapQ (value mode) x)
-            | otherwise -> element name (zipWith fieldValue fields (gmapQ (\y m -> value m y) x))
+            | otherwise -> element name
+                [ fieldValue f v | (f, v) <- zip fields (gmapQ (\y m -> value m y) x)
+                , f `notElem` derivedFields ]
   where
     c = toConstr x
     name = Text.pack (showConstr c)
