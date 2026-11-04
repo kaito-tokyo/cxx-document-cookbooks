@@ -34,14 +34,19 @@ typeset() {
 # First run: .aux, .idx, .glo, .out and std-gram.ext.
 typeset
 
-# Indexes (\makeindex[name=...,options=...] in std.tex) and glossaries.
-splitindex -m "" std.idx > /dev/null
-for idx in std-*.idx; do
-  name=${idx#std-}; name=${name%.idx}
+# Indexes and glossaries. Recent drafts use imakeidx with splitindex: all
+# entries go to std.idx, to be split into std-NAME.idx. Older ones (N4861)
+# use memoir's \makeindex[NAME], writing NAME.idx. Either way NAME.ist, if
+# present, is the index style, as in the draft's latexmkrc.
+if [ -f std.idx ]; then splitindex -m "" std.idx > /dev/null; fi
+for idx in *.idx; do
+  [ -f "$idx" ] && [ "$idx" != std.idx ] || continue
+  stem=${idx%.idx}
+  name=${stem#std-}
   style=""
   if [ -f "$name.ist" ]; then style="-s $name.ist"; fi
   # shellcheck disable=SC2086
-  makeindex -q $style -o "std-$name.ind" "$idx"
+  makeindex -q $style -o "$stem.ind" "$idx"
 done
 for glo in *.glo; do
   [ -f "$glo" ] || continue

@@ -16,6 +16,7 @@ no script. The front matter (cover, foreword, contents) is left out.
 
 import html
 import json
+import os
 import re
 import subprocess
 import sys
@@ -288,8 +289,12 @@ def typeset_math(tokens):
                 seen.add((t[kind], display))
                 keys.append((t[kind], display))
     request = json.dumps([{"tex": tex, "display": display} for tex, display in keys])
+    # Ubuntu's node-mathjax-full lives in /usr/share/nodejs, which only
+    # Ubuntu's own node searches by default.
+    env = dict(os.environ)
+    env["NODE_PATH"] = os.pathsep.join(p for p in (env.get("NODE_PATH"), "/usr/share/nodejs") if p)
     result = subprocess.run(["node", str(HERE / "render-math.js")], input=request,
-                            capture_output=True, text=True, check=True)
+                            capture_output=True, text=True, check=True, env=env)
     reply = json.loads(result.stdout)
     return dict(zip(keys, reply["html"])), reply["css"]
 
@@ -308,6 +313,10 @@ def main():
 
     out_dir.mkdir(parents=True, exist_ok=True)
     contents = []
+    # A part of the back matter with no text at all (an empty glossary, such
+    # as the cross-references from the previous standard in N4861) is left out.
+    pages = [p for p in pages if not p[2].startswith("back")
+             or any(t.get("text", "").strip() for t in tokens[p[0]:p[1]])]
     for start, end, name in pages:
         page = Page(anchor_page, math_html)
         for t in tokens[start:end]:

@@ -10,6 +10,13 @@
 \directlua{dofile(cxxtokens_dir .. "/cxxtokens.lua")}
 \AddToHook{package/graphicx/after}{\RenewDocumentCommand\includegraphics{s O{} m}{[#3]}}
 
+% Older drafts (N4861) replace an internal of listings in styles.tex and
+% stop unless listings is 1.5b to 1.8c; pretend 1.8c while styles.tex is read.
+\AddToHook{file/styles.tex/before}{\expandafter\let\csname cxxlstversion\expandafter\endcsname
+  \csname lst@version\endcsname \expandafter\def\csname lst@version\endcsname{1.8c}}
+\AddToHook{file/styles.tex/after}{\expandafter\let\csname lst@version\expandafter\endcsname
+  \csname cxxlstversion\endcsname}
+
 % Walk each page into the token stream, then empty it of all but its
 % \write nodes and destinations.
 \AddToHook{shipout/before}{\directlua{cxx.shipout(\number\ShipoutBox)}}
@@ -59,13 +66,17 @@
 \AddToHook{env/codeblock/begin}{\cxxmark{begin codeblock}}
 \AddToHook{env/codeblock/end}{\cxxmark{end codeblock}}
 
-% Inline markup.
-\AddToHook{cmd/tcode/before}{\cxxmark{begin tcode}}
-\AddToHook{cmd/tcode/after}{\cxxmark{end tcode}}
-\AddToHook{cmd/grammarterm/before}{\cxxmark{begin grammarterm}}
-\AddToHook{cmd/grammarterm/after}{\cxxmark{end grammarterm}}
-\AddToHook{cmd/defnx/before}{\cxxmark{begin defn}}
-\AddToHook{cmd/defnx/after}{\cxxmark{end defn}}
+% Inline markup. The commands are wrapped in a group rather than given
+% cmd hooks, so that they still work as a subscript without braces
+% ($E_\tcode{x}$ in older drafts).
+\AtBeginDocument{%
+  \NewCommandCopy\cxxorigtcode\tcode
+  \RenewDocumentCommand\tcode{m}{{\cxxmark{begin tcode}\cxxorigtcode{#1}\cxxmark{end tcode}}}%
+  \NewCommandCopy\cxxoriggrammarterm\grammarterm
+  \RenewDocumentCommand\grammarterm{m}{{\cxxmark{begin grammarterm}\cxxoriggrammarterm{#1}\cxxmark{end grammarterm}}}%
+  \NewCommandCopy\cxxorigdefnx\defnx
+  \RenewDocumentCommand\defnx{mm}{{\cxxmark{begin defn}\cxxorigdefnx{#1}{#2}\cxxmark{end defn}}}%
+}
 \AtBeginDocument{%
   \NewCommandCopy\cxxorigiref\iref
   \RenewDocumentCommand\iref{m}{\cxxmark{iref #1}\cxxorigiref{#1}}%
