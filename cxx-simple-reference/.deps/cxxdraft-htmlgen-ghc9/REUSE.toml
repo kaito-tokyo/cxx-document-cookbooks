@@ -1,0 +1,9 @@
+# Copy of github.com/Eelis/cxxdraft-htmlgen at
+# e91ccb5500bb427e4a19dfb42b2023c2b75783fe, released into the public
+# domain by its authors (see LICENSE).
+version = 1
+
+[[annotations]]
+path = "**"
+SPDX-FileCopyrightText = "Eelis <eelis@eelis.net> and the cxxdraft-htmlgen contributors"
+SPDX-License-Identifier = "LicenseRef-cxxdraft-htmlgen-PublicDomain"
